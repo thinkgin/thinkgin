@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"log"
-	"thinkgin/ extend/setting"
+	"thinkgin/extend/setting"
 )
 
 var db *gorm.DB
