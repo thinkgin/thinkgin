@@ -6,6 +6,7 @@ import (
 	"thinkgin/extend/setting"
 )
 
+/*核心路由*/
 func InitRouter() *gin.Engine {
 	r := gin.New()
 
