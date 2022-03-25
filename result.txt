@@ -1,0 +1,40 @@
+thinkgin_blog_new_20220324
+├─.gitignore
+├─go.mod
+├─go.sum
+├─main.go
+├─README.md
+├─runtime
+|    └.gitkeep
+├─route
+|   ├─.gitkeep
+|   └router.go
+├─public
+|   └.gitkeep
+├─extend
+|   ├─ .gitkeep
+|   ├─util
+|   |  └pagination.go
+|   ├─setting
+|   |    └setting.go
+|   ├─error
+|   |   ├─code.go
+|   |   └msg.go
+├─dao
+|  └.gitkeep
+├─config
+|   └config.ini
+├─app
+|  ├─index
+|  |   ├─common.go
+|  |   ├─view
+|  |   |  └.gitkeep
+|  |   ├─model
+|  |   |   └.gitkeep
+|  |   ├─controller
+|  |   |     ├─.gitkeep
+|  |   |     ├─v1
+|  |   |     | └tag.go
+|  ├─common
+|  |   ├─model
+|  |   |   └models.go

@@ -1,10 +1,29 @@
 # thinkgin_blog_new
 
 #### 介绍
-完善好博客相关的处理-1
+实现一个Go语言基于gin的增删改查基础框架
 
 #### 软件架构
-软件架构说明
+```azure
+thinkgin  应用部署目录
+├─app                  应用目录（可设置）
+│  ├─common            公共模块目录（可更改）
+│  │  └─model          模型目录
+│  └─index             模块目录(可更改)
+│      ├─controller    控制器目录
+│      │  └─v1         控制器版本目录
+│      ├─model         模块模型目录
+│      └─view          模块视图目录
+├─config               公共配置文件
+├─dao                  数据库基础SQL文件目录     
+├─extend               扩展目录
+│  ├─error             错误码目录
+│  ├─setting           配置关联目录
+│  └─util              常用扩展目录
+├─public               WEB 部署目录（对外访问目录）
+├─route                路由目录
+└─runtime              应用的运行时目录（可写，可设置）
+```
 
 
 #### 安装教程
