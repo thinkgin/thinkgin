@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"log"
 	"thinkgin/extend/setting"
 )
@@ -43,7 +44,7 @@ func init() {
 		log.Println(err)
 	}
 
-	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
+	gorm.DefaultTableNameHandler = func(Db *gorm.DB, defaultTableName string) string {
 		return tablePrefix + defaultTableName
 	}
 

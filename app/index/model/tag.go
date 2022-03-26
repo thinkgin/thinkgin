@@ -6,9 +6,9 @@ type Tag struct {
 	model.Model
 
 	Name       string `json:"name"`
-	CreateBy   string `json:"created_by"`
+	CreatedBy  string `json:"created_by"`
 	ModifiedBy string `json:"modified_by"`
-	State      string `json:"state"`
+	State      int    `json:"state"`
 }
 
 /**
@@ -16,6 +16,7 @@ type Tag struct {
  */
 func GetTags(pageNum int, pageSize int, maps interface{}) (tags []Tag) {
 	model.Db.Where(maps).Offset(pageNum).Limit(pageSize).Find(&tags)
+
 	return
 }
 
@@ -24,5 +25,6 @@ func GetTags(pageNum int, pageSize int, maps interface{}) (tags []Tag) {
  */
 func GetTagTotal(maps interface{}) (count int) {
 	model.Db.Model(&Tag{}).Where(maps).Count(&count)
+
 	return
 }
