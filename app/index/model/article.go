@@ -8,7 +8,7 @@ import (
 
 type Article struct {
 	model.Model
-	TadID      int    `json:"tag_id" gorm:"index"`
+	TagID      int    `json:"tag_id" gorm:"index"`
 	Tag        Tag    `json:"tag"`
 	Title      string `json:"title"`
 	Desc       string `json:"desc"`
@@ -24,7 +24,7 @@ type Article struct {
 
 func ExistArticleByID(id int) bool {
 	var article Article
-	model.Db.Select("id=?", id).First(&article)
+	model.Db.Select("id").Where("id=?", id).First(&article)
 	if article.ID > 0 {
 		return true
 	}
@@ -54,7 +54,7 @@ func GetArticles(pageNum int, pageSize int, maps interface{}) (article []Article
 * TODO (article Article) 我写成了 (article *Article)
  */
 
-func GetArticle(id int) (article *Article) {
+func GetArticle(id int) (article Article) {
 	model.Db.Where("id=?", id).First(&article)
 	model.Db.Model(&article).Related(&article.Tag)
 	return
@@ -74,7 +74,7 @@ func EditArticle(id int, data interface{}) bool {
  */
 func AddArticle(data map[string]interface{}) bool {
 	model.Db.Create(&Article{
-		TadID:     data["tag_id"].(int),
+		TagID:     data["tag_id"].(int),
 		Title:     data["title"].(string),
 		Desc:      data["desc"].(string),
 		Content:   data["content"].(string),
@@ -98,8 +98,9 @@ func DeleteArticle(id int) bool {
 *插入前更新创建时间
  */
 
-func (article *Article) BeforeCreate(scope gorm.Scope) error {
+func (article *Article) BeforeCreate(scope *gorm.Scope) error {
 	scope.SetColumn("CreatedOn", time.Now().Unix())
+
 	return nil
 }
 
@@ -107,7 +108,7 @@ func (article *Article) BeforeCreate(scope gorm.Scope) error {
 *更新前写入更新时间
  */
 
-func (article *Article) BeforeUpdate(scope gorm.Scope) error {
+func (article *Article) BeforeUpdate(scope *gorm.Scope) error {
 	scope.SetColumn("ModifiedOn", time.Now().Unix())
 	return nil
 }
