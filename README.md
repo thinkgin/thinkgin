@@ -34,9 +34,8 @@ thinkgin  应用部署目录
 
 #### 使用说明
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+- API地址：https://console-docs.apipost.cn/cover.html?url=c242b016c3a04b86&salt=68d7302e8f7e1cb9
+- 密码：892156
 
 #### 参与贡献
 
