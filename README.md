@@ -1,4 +1,4 @@
-# thinkgin_blog_new
+# ThinkGin
 
 #### 介绍
 实现一个Go语言基于gin的增删改查基础框架
@@ -29,6 +29,9 @@ thinkgin  应用部署目录
 #### 安装教程
 
 ```azure
+导入数据库：数据库文件地址：dao/thinkgin.sql
+修改配置文件数据库配置：config/config.ini
+
 C:\> $env:GO111MODULE = "on"
 C:\> $env:GOPROXY = "https://goproxy.cn,direct"
 或者
