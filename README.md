@@ -46,7 +46,8 @@ go run main.go
 
 #### 1.0版本迭代
 
-1.  JWT的token校验
-2.  Log日志的接入
+1. JWT的token校验
+2. Log日志的接入
+3. Swagger文档接入:https://www.cnblogs.com/xiaobaiskill/p/10696621.html
 
 
