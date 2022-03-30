@@ -3,8 +3,8 @@ package v1
 import (
 	"github.com/astaxie/beego/validation"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"github.com/unknwon/com"
-	"log"
 	"net/http"
 	model2 "thinkgin/app/index/model"
 	error2 "thinkgin/extend/error"

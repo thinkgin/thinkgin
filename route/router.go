@@ -3,15 +3,14 @@ package route
 import (
 	"github.com/gin-gonic/gin"
 	v1 "thinkgin/app/index/controller/v1"
+	"thinkgin/extend/middleware"
 	"thinkgin/extend/setting"
 )
 
 /*核心路由*/
 func InitRouter() *gin.Engine {
 	r := gin.New()
-
-	r.Use(gin.Logger(), gin.Recovery())
-
+	r.Use(gin.Logger(), gin.Recovery(), middleware.LoggerToFile())
 	gin.SetMode(setting.RunMode)
 
 	apiv1 := r.Group("/api/v1")

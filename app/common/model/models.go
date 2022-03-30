@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
-	"log"
+	//"log"
+	log "github.com/sirupsen/logrus"
 	"thinkgin/extend/setting"
 )
 

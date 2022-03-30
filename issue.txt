@@ -1,0 +1,8 @@
+Question:Failed to write to log, invalid argument
+Answer:https://github.com/sirupsen/logrus/issues/1084
+
+Question:failed to rotate: failed to create new symlink
+Answer:https://my.oschina.net/randolphcyg/blog/5072946
+
+Question:Gin框架 - 使用 Logrus 进行日志记录
+Answer:https://juejin.cn/post/6844903896922456071

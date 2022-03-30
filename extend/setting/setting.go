@@ -1,7 +1,7 @@
 package setting
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"time"
 
 	"github.com/go-ini/ini"
@@ -16,8 +16,10 @@ var (
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 
-	PageSize  int
-	JwtSecret string
+	PageSize      int
+	JwtSecret     string
+	LOG_FILE_PATH string
+	LOG_FILE_NAME string
 )
 
 func init() {
@@ -26,10 +28,21 @@ func init() {
 	if err != nil {
 		log.Fatalf("Fail to parse 'config/config.ini': %v", err)
 	}
-
+	LoadLog()
 	LoadBase()
 	LoadServer()
 	LoadApp()
+}
+
+func LoadLog() {
+	sec, err := Cfg.GetSection("log")
+	if err != nil {
+		log.Fatalf("Fail to get section 'app': %v", err)
+	}
+	logpath := "runtime/log"
+	logname := "system"
+	LOG_FILE_PATH = sec.Key("LOG_FILE_PATH").MustString(logpath)
+	LOG_FILE_NAME = sec.Key("LOG_FILE_NAME").MustString(logname)
 }
 
 func LoadBase() {
