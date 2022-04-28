@@ -2,6 +2,7 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
+	"net/http"
 	v1 "thinkgin/app/index/controller/v1"
 	"thinkgin/extend/middleware"
 	"thinkgin/extend/setting"
@@ -36,7 +37,12 @@ func InitRouter() *gin.Engine {
 		//删除文章
 		apiv1.DELETE("/articles/:id", v1.DelArticle)
 	}
-	//r.GET("/test", func(c *gin.Context) {
+
+	r.LoadHTMLGlob("app/index/view/*")
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", gin.H{"title": "我是测试", "ce": "123456"})
+	})
+	//r.GET("/", func(c *gin.Context) {
 	//	c.JSON(200, gin.H{
 	//		"message": "hello,router",
 	//	})
