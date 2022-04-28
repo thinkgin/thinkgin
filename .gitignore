@@ -7,4 +7,3 @@ composer.lock
 .svn
 .vscode
 node_modules
-/config/*
