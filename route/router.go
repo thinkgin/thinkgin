@@ -36,6 +36,8 @@ func InitRouter() *gin.Engine {
 		apiv1.PUT("/articles/:id", v1.EditArticle)
 		//删除文章
 		apiv1.DELETE("/articles/:id", v1.DelArticle)
+		//——————————————————————————————————————分割线-下面是测试数据——————————————————————————————————————————
+		apiv1.GET("/hello", v1.HelloWord) /*测试输出Hello Word*/
 	}
 
 	r.LoadHTMLGlob("app/index/view/*")

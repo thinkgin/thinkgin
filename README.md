@@ -59,4 +59,10 @@ http://127.0.0.1:8000/  就可以看到上面的欢迎界面
 2. Log日志的接入
 3. Swagger文档接入:https://www.cnblogs.com/xiaobaiskill/p/10696621.html
 
+#### 常见问题
+- goland导入包爆红的问题的解决方案（成功解决Nice）：
+  `GOPROXY=https://goproxy.cn,direct`
+![img_1.png](img_1.png)
+
+
 
