@@ -74,11 +74,6 @@ CREATE TABLE `blog_tag` (
 -- ----------------------------
 -- Records of blog_tag
 -- ----------------------------
-INSERT INTO `blog_tag` VALUES ('1', 'news123', '1648048265', 'laowu', '0', '', '0', '1');
-INSERT INTO `blog_tag` VALUES ('2', '2', '1648093612', 'test', '0', '', '0', '1');
-INSERT INTO `blog_tag` VALUES ('3', 'goods33333', '1648093741', 'test', '1648449216', 'test12', '0', '1');
-INSERT INTO `blog_tag` VALUES ('4', '1', '0', 'test', '0', '', '0', '1');
-INSERT INTO `blog_tag` VALUES ('5', 'good', '0', 'test', '0', '', '0', '1');
-INSERT INTO `blog_tag` VALUES ('6', 'goods', '0', 'test', '0', '', '0', '1');
-INSERT INTO `blog_tag` VALUES ('7', 'goods2', '0', 'test', '0', '', '0', '1');
+INSERT INTO `blog_tag` VALUES ('1', 'laowutest', '1648048265', 'laowu', '0', '', '0', '1');
+INSERT INTO `blog_tag` VALUES ('2', 'thinkgin', '1648093612', 'laowu', '0', '', '0', '1');
 SET FOREIGN_KEY_CHECKS=1;
