@@ -19,3 +19,5 @@ time="2022-10-24T01:09:25+08:00" level=info client_ip=127.0.0.1 latency_time="16
 time="2022-10-24T01:09:29+08:00" level=info client_ip=127.0.0.1 latency_time="346.6µs" req_method=GET req_uri="/api/v1/hello?name=laowu" status_code=200
 time="2022-10-24T01:10:17+08:00" level=info client_ip=127.0.0.1 latency_time="770.9µs" req_method=GET req_uri=/ status_code=200
 time="2022-10-24T01:10:19+08:00" level=info client_ip=127.0.0.1 latency_time="62µs" req_method=GET req_uri="/api/v1/hello?name=laowu" status_code=200
+time="2022-10-24T01:11:39+08:00" level=info client_ip=127.0.0.1 latency_time=0s req_method=GET req_uri="/api/v1/hello?name=laowu" status_code=200
+time="2022-10-24T01:11:56+08:00" level=info client_ip=127.0.0.1 latency_time=0s req_method=GET req_uri=/ status_code=200
