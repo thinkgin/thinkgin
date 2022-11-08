@@ -1,7 +1,7 @@
 # ThinkGin
 
 
-![img.png](img.png)
+![img.png](img/img.png)
 
 #### 介绍
 实现一个Go语言基于gin的增删改查基础框架
@@ -17,7 +17,7 @@ thinkgin  应用部署目录
 │      │  └─v1         控制器版本目录
 │      ├─model         模块模型目录
 │      └─view          模块视图目录
-├─config               公共配置文件
+├─config               公共配置文件(已删除，配置文件更新到最外层)
 ├─dao                  数据库基础SQL文件目录     
 ├─extend               扩展目录
 │  ├─error             错误码目录
@@ -62,7 +62,7 @@ http://127.0.0.1:8000/  就可以看到上面的欢迎界面
 #### 常见问题
 - goland导入包爆红的问题的解决方案（成功解决Nice）：
   `GOPROXY=https://goproxy.cn,direct`
-![img_1.png](img_1.png)
+![img_1.png](img/img_1.png)
 
 
 ##### 人生感悟

@@ -49,6 +49,5 @@ func InitRouter() *gin.Engine {
 	//		"message": "hello,router",
 	//	})
 	//})
-
 	return r
 }
