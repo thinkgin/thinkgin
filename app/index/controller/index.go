@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// 获取多个文章标签
+// Hello Word
 func HelloWord(c *gin.Context) {
 	name := c.Query("name") /*接收参数*/
 	//maps := make(map[string]interface{})
