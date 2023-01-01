@@ -3,7 +3,8 @@ package route
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
-	v1 "thinkgin/app/index/controller/v1"
+	v1 "thinkgin/app/blog/controller/v1"
+	"thinkgin/app/index/controller"
 	"thinkgin/extend/middleware"
 	"thinkgin/extend/setting"
 )
@@ -37,17 +38,13 @@ func InitRouter() *gin.Engine {
 		//删除文章
 		apiv1.DELETE("/articles/:id", v1.DelArticle)
 		//——————————————————————————————————————分割线-下面是测试数据——————————————————————————————————————————
-		apiv1.GET("/hello", v1.HelloWord) /*测试输出Hello Word*/
+		apiv1.GET("/hello", controller.HelloWord) /*测试输出Hello Word*/
+		//apiv1.GET("/hello", v1.HelloWord) /*测试输出Hello Word*/
 	}
 
 	r.LoadHTMLGlob("app/index/view/*")
 	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", gin.H{"title": "我是测试", "ce": "123456"})
+		c.HTML(http.StatusOK, "index.html", gin.H{"title": "我是测试"})
 	})
-	//r.GET("/", func(c *gin.Context) {
-	//	c.JSON(200, gin.H{
-	//		"message": "hello,router",
-	//	})
-	//})
 	return r
 }

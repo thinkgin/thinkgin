@@ -6,7 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/unknwon/com"
 	"net/http"
-	model2 "thinkgin/app/index/model"
+	model2 "thinkgin/app/blog/model"
 	error2 "thinkgin/extend/error"
 	"thinkgin/extend/setting"
 	"thinkgin/extend/util"

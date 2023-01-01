@@ -5,13 +5,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/unknwon/com"
 	"net/http"
-	"thinkgin/app/index/model"
+	"thinkgin/app/blog/model"
 	error2 "thinkgin/extend/error"
 	"thinkgin/extend/setting"
 	"thinkgin/extend/util"
 )
 
-//获取多个文章标签
+// 获取多个文章标签
 func GetTags(c *gin.Context) {
 	name := c.Query("name")
 	maps := make(map[string]interface{})
@@ -37,7 +37,7 @@ func GetTags(c *gin.Context) {
 	})
 }
 
-//新增文章标签
+// 新增文章标签
 func AddTag(c *gin.Context) {
 	name := c.PostForm("name")
 	state := com.StrTo(c.DefaultPostForm("state", "0")).MustInt()
@@ -66,7 +66,7 @@ func AddTag(c *gin.Context) {
 	})
 }
 
-//修改文章标签
+// 修改文章标签
 func EditTag(c *gin.Context) {
 	id := com.StrTo(c.Param("id")).MustInt()
 	name := c.PostForm("name")
@@ -111,7 +111,7 @@ func EditTag(c *gin.Context) {
 
 }
 
-//删除文章标签
+// 删除文章标签
 func DelTag(c *gin.Context) {
 	id := com.StrTo(c.Param("id")).MustInt()
 	valid := validation.Validation{}
