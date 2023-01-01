@@ -8,6 +8,7 @@ import (
 )
 
 // Hello Word
+// TODO 日志跟控制台输出改写  - 2023年1月2日00:48:55
 func HelloWord(c *gin.Context) {
 	name := c.Query("name") /*接收参数*/
 	//maps := make(map[string]interface{})
