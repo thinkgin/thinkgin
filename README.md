@@ -9,23 +9,27 @@
 #### 软件架构
 ```azure
 thinkgin  应用部署目录
-├─app                  应用目录（可设置）
-│  ├─common            公共模块目录（可更改）
-│  │  └─model          模型目录
-│  └─index             模块目录(可更改)
-│      ├─controller    控制器目录
-│      │  └─v1         控制器版本目录
-│      ├─model         模块模型目录
-│      └─view          模块视图目录
-├─config               公共配置文件(已删除，配置文件更新到最外层)
-├─dao                  数据库基础SQL文件目录     
-├─extend               扩展目录
-│  ├─error             错误码目录
-│  ├─setting           配置关联目录
-│  └─util              常用扩展目录
-├─public               WEB 部署目录（对外访问目录）
-├─route                路由目录
-└─runtime              应用的运行时目录（可写，可设置）
+├─app                     应用目录（可设置）
+│  ├─blog                 博客示例目录
+│  │  ├─controller        控制器目录
+│  │  │  └─v1             控制器子目录(用于API版本控制)
+│  │  ├─model             模型目录
+│  │  └─view              视图目录
+│  ├─common               公共模块目录（可更改）
+│  │  └─model             公共模块模型目录
+│  └─index                首页模块
+│      ├─controller       首页模块控制器目录
+│      ├─model            首页模块模型目录
+│      └─view             首页模块视图目录
+├─dao                     测试数据库基础SQL文件目录
+├─extend                  扩展目录
+│  ├─error                错误码目录
+│  ├─middleware           中间件目录
+│  ├─setting              配置关联目录
+│  └─util                 常用扩展目录
+├─public                  WEB 部署目录（对外访问目录）
+├─route                   路由目录 
+└─runtime                 应用的运行时目录（可写，可设置）
 ```
 
 
