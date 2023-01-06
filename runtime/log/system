@@ -44,3 +44,9 @@ time="2023-01-02T00:36:50+08:00" level=info client_ip=127.0.0.1 latency_time=37.
 time="2023-01-02T00:36:51+08:00" level=info client_ip=127.0.0.1 latency_time=0s req_method=GET req_uri=/favicon.ico status_code=404
 time="2023-01-02T00:43:10+08:00" level=info client_ip=127.0.0.1 latency_time=1.5234ms req_method=GET req_uri=/ status_code=200
 time="2023-01-02T00:43:11+08:00" level=info client_ip=127.0.0.1 latency_time="885.7µs" req_method=GET req_uri="/index/hello?name=ThinkGin" status_code=200
+time="2023-01-06T17:22:23+08:00" level=info client_ip=127.0.0.1 latency_time=4.7662ms req_method=GET req_uri=/ status_code=200
+time="2023-01-06T17:22:24+08:00" level=info client_ip=127.0.0.1 latency_time=0s req_method=GET req_uri=/favicon.ico status_code=404
+time="2023-01-06T17:28:43+08:00" level=info client_ip=127.0.0.1 latency_time=3.6272ms req_method=GET req_uri=/index/thinkgin status_code=200
+time="2023-01-06T17:37:01+08:00" level=info client_ip="::1" latency_time="842.7µs" req_method=GET req_uri=/ status_code=200
+time="2023-01-06T17:37:02+08:00" level=info client_ip="::1" latency_time=0s req_method=GET req_uri=/favicon.ico status_code=404
+time="2023-01-06T17:45:00+08:00" level=info client_ip=127.0.0.1 latency_time=1.8622ms req_method=GET req_uri=/ status_code=200
