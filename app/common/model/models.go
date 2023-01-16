@@ -28,12 +28,12 @@ func init() {
 		log.Fatal(2, "Fail to get section 'database': %v", err)
 	}
 
-	dbType = sec.Key("TYPE").String()
-	dbName = sec.Key("NAME").String()
-	user = sec.Key("USER").String()
-	password = sec.Key("PASSWORD").String()
-	host = sec.Key("HOST").String()
-	tablePrefix = sec.Key("TABLE_PREFIX").String()
+	dbType = sec.Key("Type").String()
+	dbName = sec.Key("Name").String()
+	user = sec.Key("User").String()
+	password = sec.Key("Password").String()
+	host = sec.Key("Host").String()
+	tablePrefix = sec.Key("TablePrefix").String()
 
 	Db, err = gorm.Open(dbType, fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=True&loc=Local",
 		user,

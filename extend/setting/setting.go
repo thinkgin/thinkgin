@@ -16,10 +16,10 @@ var (
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 
-	PageSize      int
-	JwtSecret     string
-	LOG_FILE_PATH string
-	LOG_FILE_NAME string
+	PageSize    int
+	JwtSecret   string
+	LogFilePath string
+	LogFileName string
 )
 
 func init() {
@@ -41,12 +41,12 @@ func LoadLog() {
 	}
 	logpath := "runtime/log"
 	logname := "system"
-	LOG_FILE_PATH = sec.Key("LOG_FILE_PATH").MustString(logpath)
-	LOG_FILE_NAME = sec.Key("LOG_FILE_NAME").MustString(logname)
+	LogFilePath = sec.Key("LogFilePath").MustString(logpath)
+	LogFileName = sec.Key("LogFileName").MustString(logname)
 }
 
 func LoadBase() {
-	RunMode = Cfg.Section("").Key("RUN_MODE").MustString("debug")
+	RunMode = Cfg.Section("").Key("RunMode").MustString("debug")
 }
 
 func LoadServer() {
@@ -55,9 +55,9 @@ func LoadServer() {
 		log.Fatalf("Fail to get section 'server': %v", err)
 	}
 
-	HTTPPort = sec.Key("HTTP_PORT").MustInt(8000)
-	ReadTimeout = time.Duration(sec.Key("READ_TIMEOUT").MustInt(60)) * time.Second
-	WriteTimeout = time.Duration(sec.Key("WRITE_TIMEOUT").MustInt(60)) * time.Second
+	HTTPPort = sec.Key("HttpPort").MustInt(8000)
+	ReadTimeout = time.Duration(sec.Key("ReadTimeout").MustInt(60)) * time.Second
+	WriteTimeout = time.Duration(sec.Key("WriteTimeout").MustInt(60)) * time.Second
 }
 
 func LoadApp() {
@@ -66,6 +66,6 @@ func LoadApp() {
 		log.Fatalf("Fail to get section 'app': %v", err)
 	}
 
-	JwtSecret = sec.Key("JWT_SECRET").MustString("!@)*#)!@U#@*!@!)")
-	PageSize = sec.Key("PAGE_SIZE").MustInt(10)
+	JwtSecret = sec.Key("JwtSecret").MustString("!@)*#)!@U#@*!@!)")
+	PageSize = sec.Key("PageSize").MustInt(10)
 }
