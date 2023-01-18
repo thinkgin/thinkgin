@@ -21,7 +21,6 @@ thinkgin  应用部署目录
 │      ├─controller       首页模块控制器目录
 │      ├─model            首页模块模型目录
 │      └─view             首页模块视图目录
-├─dao                     测试数据库基础SQL文件目录
 ├─extend                  扩展目录
 │  ├─error                错误码目录
 │  ├─middleware           中间件目录
