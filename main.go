@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"thinkgin/extend/setting"
 	"thinkgin/route"
 )
 
@@ -11,14 +10,17 @@ func main() {
 
 	router := route.InitRouter()
 	s := &http.Server{
-		Addr:           fmt.Sprintf(":%d", setting.HTTPPort),
-		Handler:        router,
-		ReadTimeout:    setting.ReadTimeout,
-		WriteTimeout:   setting.WriteTimeout,
+		Addr: fmt.Sprintf(":%d", 8000),
+		//Addr:           fmt.Sprintf(":%d", setting.HTTPPort),
+		Handler:     router,
+		ReadTimeout: 60,
+		//ReadTimeout:    setting.ReadTimeout,
+		WriteTimeout: 60,
+		//WriteTimeout:   setting.WriteTimeout,
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	log := "\n _________   __         _              __          ______     _               __           ____    \n|  _   _  | [  |       (_)            [  |  _    .' ___  |   (_)             /  |        .'    '.  \n|_/ | | \\_|  | |--.    __    _ .--.    | | / ]  / .'   \\_|   __    _ .--.    `| |       |  .--.  | \n    | |      | .-. |  [  |  [ `.-. |   | '' <   | |   ____  [  |  [ `.-. |    | |       | |    | | \n   _| |_     | | | |   | |   | | | |   | |`\\ \\  \\ `.___]  |  | |   | | | |   _| |_   _  |  `--'  | \n  |_____|   [___]|__] [___] [___||__] [__|  \\_]  `._____.'  [___] [___||__] |_____| (_)  '.____.'  \n                                                                                                   \n"
+	log := "\n _________  __        _            __        ______   _             _____       ____    \n|  _   _  |[  |      (_)          [  |  _  .' ___  | (_)           / ___ `.   .'    '.  \n|_/ | | \\_| | |--.   __   _ .--.   | | / ]/ .'   \\_| __   _ .--.  |_/___) |  |  .--.  | \n    | |     | .-. | [  | [ `.-. |  | '' < | |   ____[  | [ `.-. |  .'____.'  | |    | | \n   _| |_    | | | |  | |  | | | |  | |`\\ \\\\ `.___]  || |  | | | | / /_____  _|  `--'  | \n  |_____|  [___]|__][___][___||__][__|  \\_]`._____.'[___][___||__]|_______|(_)'.____.'  \n                                                                                        \n"
 	fmt.Println(log)
 	fmt.Println("控制台输入：localhost:8000 进入首页")
 
