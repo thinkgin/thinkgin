@@ -43,7 +43,19 @@ http://127.0.0.1:8000/  就可以看到上面的欢迎界面
 ![img_1.png](https://gitee.com/goubiwanyi/thinkgin/raw/master/img/img_1.png)
 
 
-##### 人生感悟
-- 跟自己利益不冲突的事情不要去理会也不要去反驳。
+##### 路由规范
+###### 路由编写文件：`route/router.go`
+###### 访问示例：`http://thinkgin.cn:8000/index/hello`
+```azure
+{
+    "code": 200,
+    "data": {
+        "Time": "2023-02-01T10:11:41.76127929+08:00",
+        "data": "Hello ThinkGin!",
+        "name": ""
+    },
+    "msg": "ok"
+}
+```
 
 
