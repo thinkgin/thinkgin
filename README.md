@@ -8,10 +8,10 @@
 ```azure
 thinkgin  应用部署目录
 ├─app                应用目录（可设置）
-  └─index            默认模块
-   ├─controller      控制器
-   ├─model           模型
-   └─view            视图
+├  └─index            默认模块
+├   ├─controller      控制器
+├   ├─model           模型
+├   └─view            视图
 ├─extend             扩展目录
 ├─public             公共目录
 ├─route              路由
