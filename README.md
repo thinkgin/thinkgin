@@ -33,7 +33,7 @@ go mod tidy
 go run main.go
 
 访问：
-http://127.0.0.1:8000/  就可以看到上面的欢迎界面
+http://localhost:8000/  就可以看到上面的欢迎界面
 ```
 
 
