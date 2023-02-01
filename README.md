@@ -58,4 +58,14 @@ http://127.0.0.1:8000/  就可以看到上面的欢迎界面
 }
 ```
 
+#### Linux打包
+```azure
+go env -w GO111MODULE=on 
+go env -w GOPROXY=https://goproxy.cn,direct
+go build -o thinkgin.sh
+```
 
+##### 直接运行即可：
+`./thinkgin.sh`
+##### 或后台执行：
+`nohup ./thinkgin.sh 1>info.log 2>&1 &`
