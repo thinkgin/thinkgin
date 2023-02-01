@@ -15,7 +15,7 @@ import (
 func LoggerToFile() gin.HandlerFunc {
 
 	logFilePath := "runtime/log"
-	logFileName := "app.log"
+	logFileName := "app"
 
 	// 日志文件
 	fileName := path.Join(logFilePath, logFileName)
