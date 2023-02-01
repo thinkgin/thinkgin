@@ -43,7 +43,7 @@ http://127.0.0.1:8000/  就可以看到上面的欢迎界面
 ![img_1.png](https://gitee.com/goubiwanyi/thinkgin/raw/master/img/img_1.png)
 
 
-##### 路由规范
+#### 路由规范
 ###### 路由编写文件：`route/router.go`
 ###### 访问示例：`http://thinkgin.cn:8000/index/hello`
 ```azure
