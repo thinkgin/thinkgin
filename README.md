@@ -67,5 +67,3 @@ go build -o thinkgin.sh
 
 ##### 直接运行即可：
 `./thinkgin.sh`
-##### 或后台执行：
-`nohup ./thinkgin.sh 1>info.log 2>&1 &`
