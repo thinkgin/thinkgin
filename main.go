@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os/exec"
 	"thinkgin/route"
+	"time"
 )
 
 func main() {
@@ -14,9 +15,9 @@ func main() {
 		Addr: fmt.Sprintf(":%d", 8000),
 		//Addr:           fmt.Sprintf(":%d", setting.HTTPPort),
 		Handler:     router,
-		ReadTimeout: 60,
+		ReadTimeout: 10 * time.Second,
 		//ReadTimeout:    setting.ReadTimeout,
-		WriteTimeout: 60,
+		WriteTimeout: 10 * time.Second,
 		//WriteTimeout:   setting.WriteTimeout,
 		MaxHeaderBytes: 1 << 20,
 	}
