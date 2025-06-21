@@ -1,4 +1,4 @@
-# ThinkGin
+# ThinkGin2.1
 ![img.png](img.png)
 
 #### 介绍
@@ -60,7 +60,7 @@ http://localhost:8000/  就可以看到上面的欢迎界面
 
 #### Linux打包
 ```azure
-go env -w GO111MODULE=on 
+go env -w GO111MODULE=on
 go env -w GOPROXY=https://goproxy.cn,direct
 go build -o thinkgin.sh
 ```
