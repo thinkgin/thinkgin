@@ -1,10 +1,13 @@
-# ThinkGin2.1
+# ThinkGin2.0
+
 ![img.png](img.png)
 
 #### 介绍
-实现一个Go语言基于gin的增删改查基础框架
+
+实现一个 Go 语言基于 gin 的增删改查基础框架
 
 #### 软件架构
+
 ```azure
 thinkgin  应用部署目录
 ├─app                应用目录（可设置）
@@ -17,7 +20,6 @@ thinkgin  应用部署目录
 ├─route              路由
 └─runtime            运行日志
 ```
-
 
 #### 安装教程
 
@@ -36,16 +38,18 @@ go run main.go
 http://localhost:8000/  就可以看到上面的欢迎界面
 ```
 
-
 #### 常见问题
-- goland导入包爆红的问题的解决方案（成功解决Nice）：
-  `GOPROXY=https://goproxy.cn,direct`
-![img_1.png](https://gitee.com/goubiwanyi/thinkgin/raw/master/img/img_1.png)
 
+- goland 导入包爆红的问题的解决方案（成功解决 Nice）：
+  `GOPROXY=https://goproxy.cn,direct`
+  ![img_1.png](https://gitee.com/goubiwanyi/thinkgin/raw/master/img/img_1.png)
 
 #### 路由规范
+
 ###### 路由编写文件：`route/router.go`
+
 ###### 访问示例：`http://thinkgin.cn:8000/index/hello`
+
 ```azure
 {
     "code": 200,
@@ -58,7 +62,8 @@ http://localhost:8000/  就可以看到上面的欢迎界面
 }
 ```
 
-#### Linux打包
+#### Linux 打包
+
 ```azure
 go env -w GO111MODULE=on
 go env -w GOPROXY=https://goproxy.cn,direct
@@ -66,6 +71,9 @@ go build -o thinkgin.sh
 ```
 
 ##### 直接运行即可：
+
 `./thinkgin.sh`
+
 ##### 或后台执行：
+
 `nohup ./thinkgin.sh 1>info.log 2>&1 &`
