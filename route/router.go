@@ -1,28 +1,39 @@
 package route
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+
 	"thinkgin/app/index/controller"
+	"thinkgin/extend/middleware"
 )
 
-/*核心路由*/
 func InitRouter() *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
-	//r.Use(gin.Logger(), gin.Recovery(), middleware.LoggerToFile())
-	gin.SetMode("release")
-	//gin.SetMode("debug")
-	//gin.SetMode(setting.RunMode)
-	//——————————————————————————————————————分割线-下面是首页数据数据——————————————————————————————————————————
+	r.Use(middleware.LoggerToFile()) // 记录日志
+
+	gin.SetMode(gin.ReleaseMode)
+
+	// 处理静态文件
+	r.Static("/static", "./static")
+
+	// 注册路由
 	index := r.Group("/index/")
 	{
-		index.GET("/hello", controller.HelloWord) /*测试输出Hello Word*/
+		index.GET("/hello", controller.HelloWord)
 	}
 
+	// 加载模板
 	r.LoadHTMLGlob("app/index/view/*")
+
+	// 主页
 	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", gin.H{"title": "我是测试"})
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"title": "Thinkgin",
+		})
 	})
+
 	return r
 }
