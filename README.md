@@ -21,15 +21,65 @@ thinkgin  应用部署目录
 └─runtime            运行日志
 ```
 
-#### 安装教程
+#### Usage
 
-```azure
+Go 1.13 and above (RECOMMENDED)
 
+Open your terminal and execute
+
+```
+$ go env -w GO111MODULE=on
+$ go env -w GOPROXY=https://goproxy.cn,direct
+```
+
+done.
+
+macOS or Linux
+
+Open your terminal and execute
+
+```
+$ export GO111MODULE=on
+$ export GOPROXY=https://goproxy.cn
+```
+
+or
+
+```
+$ echo "export GO111MODULE=on" >> ~/.profile
+$ echo "export GOPROXY=https://goproxy.cn" >> ~/.profile
+$ source ~/.profile
+```
+
+done.
+
+Windows
+
+Open your terminal and execute
+
+```
 C:\> $env:GO111MODULE = "on"
-C:\> $env:GOPROXY = "https://goproxy.cn,direct"
-或者
-C:\> $env:GOPROXY = "https://goproxy.io,direct"
+C:\> $env:GOPROXY = "https://goproxy.cn"
+```
 
+or
+
+1. Open the Start Search, type in "env"
+2. Choose the "Edit the system environment variables"
+3. Click the "Environment Variables…" button
+4. Under the "User variables for <YOUR_USERNAME>" section (the upper half)
+5. Click the "New..." button
+6. Choose the "Variable name" input bar, type in "GO111MODULE"
+7. Choose the "Variable value" input bar, type in "on"
+8. Click the "OK" button
+9. Click the "New..." button
+10. Choose the "Variable name" input bar, type in "GOPROXY"
+11. Choose the "Variable value" input bar, type in "https://goproxy.cn"
+12. Click the "OK" button
+
+done.
+
+```
 go mod init thinkgin
 go mod tidy
 go run main.go
