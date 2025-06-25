@@ -55,6 +55,133 @@ go run main.go
 
 访问：http://localhost:8000/
 
+#### 日志管理
+
+ThinkGin2.0 集成了高性能的 **Logrus** 日志管理器，这是目前 GitHub 上 Star 最多的 Go 语言日志库。
+
+##### 日志特性
+
+- 🚀 **高性能**: 基于 Logrus (GitHub 25.3k+ stars) 的高性能日志库
+- 📊 **结构化日志**: 支持 JSON 和 Text 两种格式
+- 🔄 **自动轮转**: 支持按时间和大小自动切割日志文件
+- 📝 **多级别**: 支持 trace, debug, info, warn, error, fatal, panic 7 个级别
+- ⚙️ **配置化**: 所有日志设置都可通过配置文件调整
+- 🎯 **中间件**: 自动记录所有 HTTP 请求日志
+- 💼 **业务日志**: 便捷的业务日志记录接口
+
+##### 配置说明
+
+在 `config.ini` 文件中可以配置日志相关参数：
+
+```ini
+[log]
+# 日志文件路径
+LogFilePath = runtime/log
+# 日志文件名
+LogFileName = system
+# 日志级别: trace, debug, info, warn, error, fatal, panic
+LogLevel = info
+# 日志格式: json, text
+LogFormat = json
+# 日志文件最大保存天数
+LogMaxAge = 7
+# 日志文件切割时间间隔(小时)
+LogRotationTime = 24
+```
+
+##### 使用方法
+
+**1. HTTP 请求自动日志**
+
+框架会自动记录所有 HTTP 请求的详细信息，包括：
+
+- 请求方法和路径
+- 状态码和响应时间
+- 客户端 IP 和 User-Agent
+- 时间戳
+
+**2. 业务日志记录**
+
+在控制器或其他业务逻辑中使用：
+
+```go
+import "thinkgin/extend/middleware"
+
+// 记录信息日志
+middleware.BusinessLogger("info", "用户登录成功", map[string]interface{}{
+    "user_id": 123,
+    "username": "john",
+    "ip": "192.168.1.1",
+})
+
+// 记录错误日志
+middleware.BusinessLogger("error", "数据库连接失败", map[string]interface{}{
+    "error": err.Error(),
+    "database": "mysql",
+})
+
+// 记录调试日志
+middleware.BusinessLogger("debug", "处理业务逻辑", map[string]interface{}{
+    "step": "validation",
+    "data": requestData,
+})
+```
+
+**3. 获取日志实例**
+
+如需更复杂的日志操作，可直接获取 logrus 实例：
+
+```go
+import "thinkgin/app"
+
+logger := app.GetLogger()
+logger.WithFields(logrus.Fields{
+    "user_id": 123,
+    "action": "update_profile",
+}).Info("用户更新资料")
+```
+
+##### 日志文件
+
+- 日志文件位置：`runtime/log/`
+- 文件命名：`system.YYYYMMDD.log`
+- 当前日志软链：`system.log`
+- 自动清理：超过设定天数的旧日志会自动删除
+
+##### 日志级别说明
+
+| 级别  | 说明             | 使用场景         |
+| ----- | ---------------- | ---------------- |
+| trace | 最详细的跟踪信息 | 调试复杂问题时   |
+| debug | 调试信息         | 开发调试         |
+| info  | 一般信息         | 业务流程记录     |
+| warn  | 警告信息         | 潜在问题提醒     |
+| error | 错误信息         | 错误处理         |
+| fatal | 致命错误         | 程序无法继续运行 |
+| panic | 恐慌级错误       | 触发 panic       |
+
+##### 示例配置
+
+**开发环境配置**
+
+```ini
+[log]
+LogLevel = debug
+LogFormat = text
+LogMaxAge = 3
+LogRotationTime = 6
+```
+
+**生产环境配置**
+
+```ini
+[log]
+LogLevel = info
+LogFormat = json
+LogMaxAge = 30
+LogRotationTime = 24
+```
+
 #### 常见问题
 
 - goland 导入包爆红的问题的解决方案（成功解决 Nice）：
