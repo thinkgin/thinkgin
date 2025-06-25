@@ -1,0 +1,40 @@
+# 视图配置
+view:
+  # 模板引擎
+  engine: "html/template" # html/template, pongo2, gin
+
+  # 模板目录
+  paths:
+    - "app/*/view"
+    - "resources/views"
+
+  # 模板文件扩展名
+  extension: ".html"
+
+  # 模板编译配置
+  compile:
+    # 是否缓存编译结果
+    cache: false
+    # 缓存目录
+    cache_path: "runtime/views"
+
+  # 静态资源配置
+  assets:
+    # 静态资源版本号（用于缓存控制）
+    version: "1.0.0"
+    # CSS 文件路径
+    css_path: "/static/css"
+    # JS 文件路径
+    js_path: "/static/js"
+    # 图片文件路径
+    img_path: "/static/images"
+
+  # 全局视图变量
+  globals:
+    app_name: "ThinkGin"
+    app_version: "2.0.1"
+
+  # 视图助手函数配置
+  helpers:
+    # 是否启用内置助手函数
+    builtin: true

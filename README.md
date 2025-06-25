@@ -11,10 +11,24 @@
 ```azure
 thinkgin  应用部署目录
 ├─app                应用目录（可设置）
-├  └─index            默认模块
-├   ├─controller      控制器
-├   ├─model           模型
-├   └─view            视图
+├  ├─index            默认模块
+├  ├ ├─controller      控制器
+├  ├ ├─model           模型
+├  ├ └─view            视图
+├  └─config.go        配置管理系统
+├─config             配置目录
+├  ├─app.yaml         应用配置
+├  ├─server.yaml      服务器配置
+├  ├─database.yaml    数据库配置
+├  ├─cache.yaml       缓存配置
+├  ├─log.yaml         日志配置
+├  ├─session.yaml     Session配置
+├  ├─middleware.yaml  中间件配置
+├  ├─route.yaml       路由配置
+├  ├─view.yaml        视图配置
+├  ├─filesystem.yaml  文件系统配置
+├  ├─lang.yaml        多语言配置
+├  └─trace.yaml       链路追踪配置
 ├─extend             扩展目录
 ├─public             公共目录
 ├─route              路由
@@ -55,7 +69,86 @@ go run main.go
 
 访问：http://localhost:8000/
 
-#### 日志管理
+#### 📁 配置管理系统
+
+ThinkGin2.0 采用**模块化配置管理**，将各个功能模块的配置分离到独立的 YAML 文件中，便于管理和维护。
+
+##### 🏗️ 配置架构
+
+```
+config/
+├── app.yaml          # 应用基础配置
+├── server.yaml       # 服务器配置
+├── database.yaml     # 数据库配置
+├── cache.yaml        # 缓存配置
+├── log.yaml          # 日志配置
+├── session.yaml      # 会话配置
+├── middleware.yaml   # 中间件配置
+├── route.yaml        # 路由配置
+├── view.yaml         # 视图配置
+├── filesystem.yaml   # 文件系统配置
+├── lang.yaml         # 多语言配置
+└── trace.yaml        # 链路追踪配置
+```
+
+##### ⚙️ 使用方法
+
+**1. 获取配置实例**
+
+```go
+// 获取全局配置
+config := app.GetConfig()
+
+// 获取特定模块配置
+appConfig := app.GetAppConfig()
+serverConfig := app.GetServerConfig()
+dbConfig := app.GetDatabaseConfig()
+```
+
+**2. 访问配置项**
+
+```go
+// 应用配置
+appName := config.App.Name
+version := config.App.Version
+jwtSecret := config.App.JWT.Secret
+
+// 服务器配置
+port := config.Server.HTTP.Port
+host := config.Server.HTTP.Host
+
+// 数据库配置
+defaultDB := config.Database.Default
+```
+
+**3. 配置示例**
+
+`config/app.yaml`:
+
+```yaml
+app:
+  name: "ThinkGin"
+  version: "2.0.1"
+  debug: true
+  timezone: "Asia/Shanghai"
+  jwt:
+    secret: "your-secret-key"
+    expire: 7200
+```
+
+`config/server.yaml`:
+
+```yaml
+server:
+  http:
+    host: "0.0.0.0"
+    port: 8000
+    read_timeout: 60
+    write_timeout: 60
+  mode: "debug" # debug, test, release
+```
+
+#### 📝 日志管理
 
 ThinkGin2.0 集成了高性能的 **Logrus** 日志管理器，这是目前 GitHub 上 Star 最多的 Go 语言日志库。
 
@@ -71,22 +164,45 @@ ThinkGin2.0 集成了高性能的 **Logrus** 日志管理器，这是目前 GitH
 
 ##### 配置说明
 
-在 `config.ini` 文件中可以配置日志相关参数：
+在 `config/log.yaml` 文件中可以配置日志相关参数：
 
-```ini
-[log]
-# 日志文件路径
-LogFilePath = runtime/log
-# 日志文件名
-LogFileName = system
-# 日志级别: trace, debug, info, warn, error, fatal, panic
-LogLevel = info
-# 日志格式: json, text
-LogFormat = json
-# 日志文件最大保存天数
-LogMaxAge = 7
-# 日志文件切割时间间隔(小时)
-LogRotationTime = 24
+```yaml
+log:
+  # 默认日志配置
+  default:
+    driver: "file" # file, console, syslog
+    level: "info" # trace, debug, info, warn, error, fatal, panic
+    format: "json" # json, text
+
+  # 文件日志配置
+  file:
+    path: "runtime/log"
+    filename: "system"
+    max_age: 7 # 保存天数
+    rotation_time: 24 # 切割时间间隔（小时）
+    max_size: 100 # 单个文件最大大小（MB）
+    compress: true # 是否压缩旧文件
+
+  # 特定类型日志配置
+  channels:
+    # 访问日志
+    access:
+      driver: "file"
+      level: "info"
+      filename: "access"
+
+    # 错误日志
+    error:
+      driver: "file"
+      level: "error"
+      filename: "error"
+
+    # SQL 日志
+    sql:
+      driver: "file"
+      level: "debug"
+      filename: "sql"
+      enabled: false # 是否启用SQL日志
 ```
 
 ##### 使用方法
@@ -162,25 +278,42 @@ logger.WithFields(logrus.Fields{
 
 ##### 示例配置
 
-**开发环境配置**
+**开发环境配置** (`config/log.yaml`)
 
-```ini
-[log]
-LogLevel = debug
-LogFormat = text
-LogMaxAge = 3
-LogRotationTime = 6
+```yaml
+log:
+  default:
+    level: "debug"
+    format: "text"
+  file:
+    max_age: 3
+    rotation_time: 6
 ```
 
-**生产环境配置**
+**生产环境配置** (`config/log.yaml`)
 
-```ini
-[log]
-LogLevel = info
-LogFormat = json
-LogMaxAge = 30
-LogRotationTime = 24
+```yaml
+log:
+  default:
+    level: "info"
+    format: "json"
+  file:
+    max_age: 30
+    rotation_time: 24
 ```
+
+#### 🗄️ 其他配置模块
+
+- **🗄️ 数据库配置** (`config/database.yaml`): 支持 MySQL、PostgreSQL、SQLite、Redis
+- **🚀 缓存配置** (`config/cache.yaml`): 支持 Redis、内存、文件缓存
+- **🔐 会话配置** (`config/session.yaml`): 支持文件、Redis、数据库存储
+- **🛡️ 中间件配置** (`config/middleware.yaml`): 全局中间件和路由组中间件
+- **🎨 视图配置** (`config/view.yaml`): 模板引擎和静态资源配置
+- **📁 文件系统配置** (`config/filesystem.yaml`): 本地存储和云存储(阿里云 OSS、腾讯云 COS、七牛云)
+- **🌐 多语言配置** (`config/lang.yaml`): 国际化支持
+- **🔍 链路追踪配置** (`config/trace.yaml`): Jaeger、Zipkin、OpenTelemetry 支持
+
+通过这个完整的模块化配置系统，你可以轻松管理应用程序的各个方面，实现配置的分离和模块化管理。
 
 #### 常见问题
 

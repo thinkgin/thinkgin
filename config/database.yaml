@@ -1,0 +1,56 @@
+# 数据库配置
+database:
+  # 默认连接
+  default: "mysql"
+
+  # 数据库连接配置
+  connections:
+    # MySQL 连接
+    mysql:
+      driver: "mysql"
+      host: "127.0.0.1"
+      port: 3306
+      database: "thinkgin"
+      username: "thinkgin"
+      password: "thinkgin"
+      charset: "utf8mb4"
+      collation: "utf8mb4_unicode_ci"
+      table_prefix: "tg_"
+
+      # 连接池配置
+      pool:
+        max_open: 100 # 最大打开连接数
+        max_idle: 10 # 最大空闲连接数
+        max_lifetime: 3600 # 连接最大生存时间（秒）
+
+      # 超时配置
+      timeout:
+        connect: 10 # 连接超时（秒）
+        read: 30 # 读取超时（秒）
+        write: 30 # 写入超时（秒）
+
+    # PostgreSQL 连接（示例）
+    pgsql:
+      driver: "postgres"
+      host: "127.0.0.1"
+      port: 5432
+      database: "thinkgin"
+      username: "postgres"
+      password: "password"
+      sslmode: "disable"
+      table_prefix: "tg_"
+
+    # SQLite 连接（示例）
+    sqlite:
+      driver: "sqlite3"
+      database: "database/thinkgin.db"
+      table_prefix: "tg_"
+
+    # Redis 连接
+    redis:
+      driver: "redis"
+      host: "127.0.0.1"
+      port: 6379
+      password: ""
+      database: 0
+      pool_size: 10

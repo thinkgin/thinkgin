@@ -1,0 +1,56 @@
+# 中间件配置
+middleware:
+  # 全局中间件（按顺序执行）
+  global:
+    - "cors" # 跨域处理
+    - "logger" # 日志记录
+    - "recovery" # 错误恢复
+    - "rate_limit" # 频率限制
+
+  # 路由组中间件
+  groups:
+    # API 接口中间件
+    api:
+      - "auth" # 认证
+      - "throttle" # 节流
+      - "validation" # 参数验证
+
+    # 管理后台中间件
+    admin:
+      - "auth"
+      - "admin_auth" # 管理员权限
+      - "csrf" # CSRF 保护
+
+  # 中间件配置
+  config:
+    # CORS 跨域配置
+    cors:
+      allow_origins: ["*"]
+      allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+      allow_headers: ["Origin", "Content-Type", "Authorization"]
+      expose_headers: ["Content-Length"]
+      allow_credentials: true
+      max_age: 86400
+
+    # 频率限制配置
+    rate_limit:
+      # 每分钟请求数限制
+      requests_per_minute: 60
+      # 每小时请求数限制
+      requests_per_hour: 1000
+      # 每日请求数限制
+      requests_per_day: 10000
+
+    # 认证配置
+    auth:
+      # JWT 认证
+      jwt:
+        header: "Authorization"
+        prefix: "Bearer "
+
+    # 节流配置
+    throttle:
+      # API 接口限制（每分钟）
+      api: 30
+      # 登录接口限制（每分钟）
+      login: 5

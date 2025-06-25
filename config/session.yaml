@@ -1,0 +1,37 @@
+# Session 配置
+session:
+  # 驱动类型
+  driver: "file" # file, redis, memory, database
+
+  # Session 名称
+  name: "THINKGIN_SESSION"
+
+  # 生存时间（秒）
+  lifetime: 7200 # 2小时
+
+  # 过期时间提醒（秒）
+  expire_on_close: false
+
+  # 加密
+  encrypt: false
+
+  # 文件存储配置
+  file:
+    path: "runtime/session"
+
+  # Redis 存储配置
+  redis:
+    connection: "redis" # 引用 database.yaml 中的 redis 连接
+
+  # 数据库存储配置
+  database:
+    table: "sessions"
+    connection: "mysql" # 引用 database.yaml 中的连接
+
+  # Cookie 配置
+  cookie:
+    path: "/"
+    domain: ""
+    secure: false
+    http_only: true
+    same_site: "lax" # lax, strict, none

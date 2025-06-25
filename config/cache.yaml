@@ -1,0 +1,29 @@
+# 缓存配置
+cache:
+  # 默认缓存驱动
+  default: "redis"
+
+  # 缓存前缀
+  prefix: "thinkgin_cache:"
+
+  # 缓存存储配置
+  stores:
+    # Redis 缓存
+    redis:
+      driver: "redis"
+      connection: "redis" # 引用 database.yaml 中的 redis 连接
+
+    # 内存缓存
+    memory:
+      driver: "memory"
+      max_size: 1000 # 最大缓存条目数
+
+    # 文件缓存
+    file:
+      driver: "file"
+      path: "runtime/cache"
+
+  # 缓存标签（用于批量清理）
+  tags:
+    enabled: true
+    separator: ":"

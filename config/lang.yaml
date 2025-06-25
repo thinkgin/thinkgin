@@ -1,0 +1,39 @@
+# 多语言配置
+lang:
+  # 默认语言
+  default: "zh-CN"
+
+  # 支持的语言列表
+  supported:
+    - "zh-CN" # 简体中文
+    - "zh-TW" # 繁体中文
+    - "en-US" # 美式英语
+    - "en-GB" # 英式英语
+    - "ja-JP" # 日语
+    - "ko-KR" # 韩语
+
+  # 语言文件目录
+  path: "resources/lang"
+
+  # 语言检测配置
+  detection:
+    # 检测顺序
+    order:
+      - "url" # URL 参数
+      - "header" # Accept-Language 头
+      - "cookie" # Cookie
+      - "session" # Session
+      - "default" # 默认语言
+
+    # URL 参数名
+    url_param: "lang"
+
+    # Cookie 配置
+    cookie:
+      name: "language"
+      expire: 2592000 # 30天
+
+  # 回退语言配置
+  fallback:
+    enabled: true
+    language: "en-US"

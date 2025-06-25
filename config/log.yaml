@@ -1,0 +1,51 @@
+# 日志配置
+log:
+  # 默认日志配置
+  default:
+    driver: "file" # file, console, syslog
+    level: "info" # trace, debug, info, warn, error, fatal, panic
+    format: "json" # json, text
+
+  # 文件日志配置
+  file:
+    path: "runtime/log"
+    filename: "system"
+    max_age: 7 # 保存天数
+    rotation_time: 24 # 切割时间间隔（小时）
+    max_size: 100 # 单个文件最大大小（MB）
+    compress: true # 是否压缩旧文件
+
+  # 控制台日志配置
+  console:
+    color: true
+
+  # 特定类型日志配置
+  channels:
+    # 访问日志
+    access:
+      driver: "file"
+      level: "info"
+      filename: "access"
+      format: "json"
+
+    # 错误日志
+    error:
+      driver: "file"
+      level: "error"
+      filename: "error"
+      format: "json"
+
+    # SQL 日志
+    sql:
+      driver: "file"
+      level: "debug"
+      filename: "sql"
+      format: "json"
+      enabled: false # 是否启用SQL日志
+
+    # 业务日志
+    business:
+      driver: "file"
+      level: "info"
+      filename: "business"
+      format: "json"

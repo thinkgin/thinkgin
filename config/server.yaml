@@ -1,0 +1,31 @@
+# 服务器配置
+server:
+  # HTTP 服务配置
+  http:
+    host: "0.0.0.0"
+    port: 8000
+    read_timeout: 60 # 读取超时时间（秒）
+    write_timeout: 60 # 写入超时时间（秒）
+    idle_timeout: 120 # 空闲超时时间（秒）
+    max_header_bytes: 1048576 # 1MB
+
+  # HTTPS 服务配置（可选）
+  https:
+    enabled: false
+    port: 8443
+    cert_file: ""
+    key_file: ""
+
+  # 运行模式
+  mode: "debug" # debug, test, release
+
+  # 静态文件配置
+  static:
+    path: "/static"
+    root: "./static"
+
+  # 上传配置
+  upload:
+    max_size: 10485760 # 10MB
+    allowed_types: ["jpg", "jpeg", "png", "gif", "pdf", "doc", "docx"]
+    path: "./public/uploads"

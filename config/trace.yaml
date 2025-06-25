@@ -1,0 +1,50 @@
+# 链路追踪配置
+trace:
+  # 是否启用链路追踪
+  enabled: false
+
+  # 追踪系统类型
+  driver: "jaeger" # jaeger, zipkin, otel
+
+  # 服务名称
+  service_name: "thinkgin"
+
+  # 采样率 (0.0 - 1.0)
+  sample_rate: 0.1
+
+  # Jaeger 配置
+  jaeger:
+    # Jaeger Agent 地址
+    agent_host: "localhost"
+    agent_port: 6832
+
+    # Jaeger Collector 地址
+    collector_url: "http://localhost:14268/api/traces"
+
+    # 用户名和密码（如果需要）
+    username: ""
+    password: ""
+
+  # Zipkin 配置
+  zipkin:
+    # Zipkin 服务器地址
+    endpoint: "http://localhost:9411/api/v2/spans"
+
+  # OpenTelemetry 配置
+  otel:
+    # OTLP 端点
+    endpoint: "http://localhost:4317"
+    # 是否使用 gRPC
+    use_grpc: true
+
+  # 追踪标签
+  tags:
+    environment: "development"
+    version: "2.0.1"
+
+  # 需要追踪的操作
+  operations:
+    - "http_request"
+    - "database_query"
+    - "cache_operation"
+    - "external_api_call"

@@ -1,0 +1,17 @@
+# 应用配置
+app:
+  name: "ThinkGin"
+  version: "2.0.2"
+  debug: true
+  timezone: "Asia/Shanghai"
+  locale: "zh-CN"
+
+  # JWT 配置
+  jwt:
+    secret: "23347$040412"
+    expire: 7200 # 2小时，单位秒
+
+  # 分页配置
+  pagination:
+    page_size: 20
+    max_page_size: 100
