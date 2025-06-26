@@ -1,131 +1,454 @@
-# ThinkGin2.0
+# ThinkGin 2.0
 
-![img.png](img.png)
+<div align="center">
 
-#### 介绍
+![ThinkGin Logo](img.png)
 
-实现一个 Go 语言基于 gin 的增删改查基础框架
+**🚀 基于 Gin 的高性能 Go Web 框架**
 
-#### 软件架构
+[![Go Version](https://img.shields.io/badge/Go-1.18+-00ADD8?style=flat&logo=go)](https://golang.org/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/badge/Release-v2.0-green.svg)](https://github.com/your-repo/thinkgin/releases)
 
-```azure
-thinkgin  应用部署目录
-├─app                应用目录（可设置）
-├  ├─index            默认模块
-├  ├ ├─controller      控制器
-├  ├ ├─model           模型
-├  ├ └─view            视图
-├  └─config.go        配置管理系统
-├─config             配置目录
-├  ├─app.yaml         应用配置
-├  ├─server.yaml      服务器配置
-├  ├─database.yaml    数据库配置
-├  ├─cache.yaml       缓存配置
-├  ├─log.yaml         日志配置
-├  ├─session.yaml     Session配置
-├  ├─middleware.yaml  中间件配置
-├  ├─route.yaml       路由配置
-├  ├─view.yaml        视图配置
-├  ├─filesystem.yaml  文件系统配置
-├  ├─lang.yaml        多语言配置
-├  ├─trace.yaml       链路追踪配置
-├  └─prometheus.yaml  Prometheus监控配置
-├─extend             扩展目录
-├─public             公共目录
-├─route              路由
-└─runtime            运行日志
+</div>
+
+---
+
+## 📖 目录
+
+- [🎯 项目介绍](#-项目介绍)
+- [🚀 快速开始](#-快速开始)
+- [🏗️ 架构设计](#️-架构设计)
+- [📁 配置管理](#-配置管理)
+- [📝 日志系统](#-日志系统)
+- [📊 监控体系](#-监控体系)
+- [🛠️ 开发指南](#️-开发指南)
+- [📦 部署指南](#-部署指南)
+- [❓ 常见问题](#-常见问题)
+
+---
+
+## 🎯 项目介绍
+
+ThinkGin 2.0 是一个基于 Gin 框架的现代化 Go 语言 Web 应用框架，专注于提供：
+
+- ⚡ **高性能**: 基于 Gin 的高性能 HTTP 路由
+- 🔧 **模块化**: 完全模块化的配置管理系统
+- 📊 **可观测**: 完整的日志、监控、链路追踪体系
+- 🛡️ **企业级**: 生产环境就绪的安全性和稳定性
+- 🎨 **易用性**: 简洁优雅的 API 设计和丰富的文档
+
+### ✨ 核心特性
+
+| 特性            | 描述                                  |
+| --------------- | ------------------------------------- |
+| 🏗️ **MVC 架构** | 标准的 Model-View-Controller 架构模式 |
+| ⚙️ **配置化**   | 基于 YAML 的模块化配置管理            |
+| 📈 **监控集成** | 内置 Prometheus 监控和 Grafana 可视化 |
+| 📝 **日志系统** | 基于 Logrus 的结构化日志记录          |
+| 🔍 **链路追踪** | 支持 Jaeger、Zipkin 分布式追踪        |
+| 💾 **多数据源** | 支持 MySQL、PostgreSQL、Redis 等      |
+| 🌐 **国际化**   | 完整的多语言支持                      |
+| 🔐 **安全性**   | JWT 认证、CORS、安全中间件            |
+
+---
+
+## 🏗️ 架构设计
+
+### 📂 项目结构
+
+```
+thinkgin/                    # 项目根目录
+├── 📁 app/                  # 应用层
+│   ├── 📁 index/            # 模块示例
+│   │   ├── 📁 controller/   # 控制器层
+│   │   ├── 📁 model/        # 数据模型层
+│   │   └── 📁 view/         # 视图层
+│   └── 📄 config.go         # 配置管理入口
+├── 📁 config/               # 配置文件目录
+│   ├── 📄 app.yaml          # 应用主配置
+│   ├── 📄 server.yaml       # 服务器配置
+│   ├── 📄 database.yaml     # 数据库配置
+│   ├── 📄 log.yaml          # 日志配置
+│   ├── 📄 prometheus.yaml   # 监控配置
+│   └── 📄 ...               # 其他模块配置
+├── 📁 extend/               # 扩展组件
+│   └── 📁 middleware/       # 中间件
+├── 📁 route/                # 路由定义
+├── 📁 public/               # 静态资源
+├── 📁 runtime/              # 运行时文件
+└── 📄 main.go               # 程序入口
 ```
 
-#### 快速开始
+### 🔄 请求流程
 
-**环境配置 (Go 1.13+)**
+```mermaid
+graph LR
+    A[HTTP Request] --> B[Router]
+    B --> C[Middleware]
+    C --> D[Controller]
+    D --> E[Model]
+    E --> F[Database]
+    F --> E
+    E --> D
+    D --> G[View/JSON]
+    G --> H[HTTP Response]
+```
+
+#### 🚀 快速开始
+
+##### 📋 环境要求
+
+- **Go 版本**: 1.18 或更高版本 (推荐 1.19+)
+- **操作系统**: Windows 10+, macOS 10.14+, Linux (Ubuntu 18.04+, CentOS 7+)
+- **内存**: 最低 512MB，推荐 1GB+
+- **磁盘空间**: 最低 100MB
+
+##### 🔧 环境配置
+
+###### **方法一：现代化配置 (Go 1.18+，推荐)**
 
 ```bash
-# 推荐方式
+# 设置 Go 模块和代理 (全局永久配置)
 go env -w GO111MODULE=on
 go env -w GOPROXY=https://goproxy.cn,direct
+go env -w GOSUMDB=sum.golang.google.cn
+
+# 验证配置
+go env | grep -E "(GO111MODULE|GOPROXY|GOSUMDB)"
 ```
 
-**macOS/Linux**
+###### **方法二：传统配置 (适用于较老版本)**
+
+**macOS/Linux (Bash/Zsh)**
 
 ```bash
+# 临时设置 (仅当前终端会话有效)
 export GO111MODULE=on
-export GOPROXY=https://goproxy.cn
+export GOPROXY=https://goproxy.cn,direct
+export GOSUMDB=sum.golang.google.cn
+
+# 永久设置 (添加到 ~/.bashrc 或 ~/.zshrc)
+echo 'export GO111MODULE=on' >> ~/.bashrc
+echo 'export GOPROXY=https://goproxy.cn,direct' >> ~/.bashrc
+echo 'export GOSUMDB=sum.golang.google.cn' >> ~/.bashrc
+source ~/.bashrc
 ```
 
-**Windows**
+**Windows (命令提示符)**
 
 ```cmd
+# 临时设置
 set GO111MODULE=on
-set GOPROXY=https://goproxy.cn
+set GOPROXY=https://goproxy.cn,direct
+set GOSUMDB=sum.golang.google.cn
+
+# 永久设置 (系统环境变量)
+setx GO111MODULE on
+setx GOPROXY https://goproxy.cn,direct
+setx GOSUMDB sum.golang.google.cn
 ```
 
-**运行项目**
+**Windows (PowerShell)**
+
+```powershell
+# 临时设置
+$env:GO111MODULE="on"
+$env:GOPROXY="https://goproxy.cn,direct"
+$env:GOSUMDB="sum.golang.google.cn"
+
+# 永久设置 (用户环境变量)
+[Environment]::SetEnvironmentVariable("GO111MODULE", "on", "User")
+[Environment]::SetEnvironmentVariable("GOPROXY", "https://goproxy.cn,direct", "User")
+[Environment]::SetEnvironmentVariable("GOSUMDB", "sum.golang.google.cn", "User")
+```
+
+##### 🏃‍♂️ 运行项目
+
+###### **方法一：从源码运行 (开发推荐)**
 
 ```bash
+# 1. 克隆项目 (如果还未克隆)
+git clone https://github.com/your-repo/thinkgin.git
+cd thinkgin
+
+# 2. 初始化 Go 模块 (如果 go.mod 不存在)
 go mod init thinkgin
+
+# 3. 下载依赖
 go mod tidy
+
+# 4. 运行项目
 go run main.go
+
+# 5. 验证运行
+curl http://localhost:8000/ || echo "请在浏览器访问 http://localhost:8000/"
 ```
 
-访问：http://localhost:8000/
+###### **方法二：编译后运行 (生产推荐)**
 
-#### 📁 配置管理系统
+```bash
+# 1. 编译项目
+go build -o thinkgin main.go
 
-ThinkGin2.0 采用**模块化配置管理**，将各个功能模块的配置分离到独立的 YAML 文件中，便于管理和维护。
+# 2. 运行编译后的程序
+# Linux/macOS
+./thinkgin
 
-##### 🏗️ 配置架构
-
-```
-config/
-├── app.yaml          # 应用基础配置
-├── server.yaml       # 服务器配置
-├── database.yaml     # 数据库配置
-├── cache.yaml        # 缓存配置
-├── log.yaml          # 日志配置
-├── session.yaml      # 会话配置
-├── middleware.yaml   # 中间件配置
-├── route.yaml        # 路由配置
-├── view.yaml         # 视图配置
-├── filesystem.yaml   # 文件系统配置
-├── lang.yaml         # 多语言配置
-├── trace.yaml        # 链路追踪配置
-└── prometheus.yaml   # Prometheus监控配置
+# Windows
+thinkgin.exe
 ```
 
-##### ⚙️ 使用方法
+###### **方法三：Docker 运行 (容器化部署)**
 
-**1. 获取配置实例**
+```bash
+# 1. 构建 Docker 镜像
+docker build -t thinkgin:latest .
+
+# 2. 运行容器
+docker run -p 8000:8000 thinkgin:latest
+```
+
+##### ✅ 验证运行
+
+成功启动后，您应该看到类似输出：
+
+```
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:   export GIN_MODE=release
+ - using code:  gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /                         --> thinkgin/app/index/controller.Hello (3 handlers)
+[GIN-debug] GET    /index/hello              --> thinkgin/app/index/controller.Hello (3 handlers)
+[GIN-debug] Listening and serving HTTP on :8000
+```
+
+**访问测试：**
+
+- 🌐 **浏览器访问**: http://localhost:8000/
+- 🔧 **API 测试**: http://localhost:8000/index/hello
+- 📊 **监控端点**: http://localhost:8000/metrics (如果启用了 Prometheus)
+
+##### ⚠️ 常见异常情况及解决方案
+
+###### **1. Go 版本过低**
+
+**错误信息**:
+
+```
+go: thinkgin requires go >= 1.18 (running go 1.17)
+```
+
+**解决方案**:
+
+```bash
+# 更新 Go 版本
+# macOS (使用 Homebrew)
+brew install go
+
+# Ubuntu/Debian
+sudo rm -rf /usr/local/go
+wget https://golang.org/dl/go1.20.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.20.linux-amd64.tar.gz
+
+# Windows: 下载安装包 https://golang.org/dl/
+```
+
+###### **2. 网络连接问题**
+
+**错误信息**:
+
+```
+go: module lookup disabled by GOPROXY=off
+go: downloading github.com/gin-gonic/gin: dial tcp: lookup proxy.golang.org: no such host
+```
+
+**解决方案**:
+
+```bash
+# 方案 1: 使用国内代理
+go env -w GOPROXY=https://goproxy.cn,direct
+
+# 方案 2: 使用阿里云代理
+go env -w GOPROXY=https://mirrors.aliyun.com/goproxy/,direct
+
+# 方案 3: 直连模式 (不推荐)
+go env -w GOPROXY=direct
+```
+
+###### **3. 端口占用问题**
+
+**错误信息**:
+
+```
+listen tcp :8000: bind: address already in use
+```
+
+**解决方案**:
+
+```bash
+# 方案 1: 查找并终止占用端口的进程
+# Linux/macOS
+lsof -ti:8000 | xargs kill -9
+
+# Windows
+netstat -ano | findstr :8000
+taskkill /PID <PID> /F
+
+# 方案 2: 修改配置文件中的端口
+# 编辑 config/server.yaml，修改 port 值
+```
+
+###### **4. 权限问题**
+
+**错误信息**:
+
+```
+permission denied: ./thinkgin
+mkdir runtime: permission denied
+```
+
+**解决方案**:
+
+```bash
+# Linux/macOS
+chmod +x thinkgin
+sudo mkdir runtime
+sudo chown $USER:$USER runtime
+
+# Windows (以管理员身份运行 PowerShell)
+```
+
+###### **5. 模块依赖问题**
+
+**错误信息**:
+
+```
+go: can't find module providing package github.com/gin-gonic/gin
+module github.com/gin-gonic/gin: reading at revision v1.9.1: unknown revision
+```
+
+**解决方案**:
+
+```bash
+# 清理模块缓存并重新下载
+go clean -modcache
+go mod download
+go mod tidy
+
+# 如果仍有问题，删除 go.sum 后重试
+rm go.sum
+go mod tidy
+```
+
+###### **6. 配置文件问题**
+
+**错误信息**:
+
+```
+yaml: unmarshal errors: line 2: cannot unmarshal !!str
+config file not found: config/app.yaml
+```
+
+**解决方案**:
+
+```bash
+# 检查配置文件是否存在
+ls -la config/
+
+# 检查 YAML 语法
+# 使用在线工具: https://yaml-online-parser.appspot.com/
+# 或安装 yamllint
+pip install yamllint
+yamllint config/app.yaml
+```
+
+###### **7. 内存不足**
+
+**错误信息**:
+
+```
+runtime: out of memory
+signal: killed
+```
+
+**解决方案**:
+
+```bash
+# 检查系统内存
+free -h  # Linux
+vm_stat  # macOS
+
+# 调整 Go 垃圾回收
+export GOGC=50  # 更频繁的垃圾回收
+export GOMEMLIMIT=512MB  # 限制内存使用 (Go 1.19+)
+```
+
+##### 🔍 故障排查工具
+
+```bash
+# 1. 检查 Go 环境
+go version
+go env
+
+# 2. 检查网络连接
+curl -I https://goproxy.cn
+ping goproxy.cn
+
+# 3. 检查端口状态
+netstat -tlnp | grep :8000  # Linux
+netstat -an | findstr :8000  # Windows
+
+# 4. 查看详细错误日志
+go run main.go -v  # 详细模式
+tail -f runtime/log/system.log  # 查看运行日志
+```
+
+##### 📞 获取帮助
+
+如果遇到其他问题，请按以下步骤排查：
+
+1. **查看日志**: 检查 `runtime/log/` 目录下的日志文件
+2. **检查配置**: 确保 `config/` 目录下所有 YAML 文件语法正确
+3. **环境检查**: 运行 `go env` 检查 Go 环境配置
+4. **提交 Issue**: 在 GitHub 仓库提交详细的错误信息和环境描述
+
+---
+
+## 📁 配置管理
+
+ThinkGin 2.0 采用**模块化配置架构**，将不同功能的配置分离到独立文件中：
+
+### 🎛️ 配置架构
+
+| 配置文件          | 功能         | 重要性 |
+| ----------------- | ------------ | ------ |
+| `app.yaml`        | 应用基础配置 | ⭐⭐⭐ |
+| `server.yaml`     | 服务器配置   | ⭐⭐⭐ |
+| `database.yaml`   | 数据库配置   | ⭐⭐⭐ |
+| `log.yaml`        | 日志配置     | ⭐⭐   |
+| `prometheus.yaml` | 监控配置     | ⭐⭐   |
+| `cache.yaml`      | 缓存配置     | ⭐     |
+| `session.yaml`    | 会话配置     | ⭐     |
+
+### 💻 使用示例
 
 ```go
-// 获取全局配置
+// 获取配置实例
 config := app.GetConfig()
 
-// 获取特定模块配置
-appConfig := app.GetAppConfig()
-serverConfig := app.GetServerConfig()
-dbConfig := app.GetDatabaseConfig()
-```
-
-**2. 访问配置项**
-
-```go
-// 应用配置
+// 访问不同模块配置
 appName := config.App.Name
-version := config.App.Version
-jwtSecret := config.App.JWT.Secret
-
-// 服务器配置
-port := config.Server.HTTP.Port
-host := config.Server.HTTP.Host
-
-// 数据库配置
-defaultDB := config.Database.Default
+serverPort := config.Server.HTTP.Port
+dbConfig := config.Database.Default
 ```
 
-**3. 配置示例**
+<details>
+<summary><strong>📄 配置文件示例</strong></summary>
 
-`config/app.yaml`:
+**app.yaml**
 
 ```yaml
 app:
@@ -138,7 +461,7 @@ app:
     expire: 7200
 ```
 
-`config/server.yaml`:
+**server.yaml**
 
 ```yaml
 server:
@@ -147,80 +470,38 @@ server:
     port: 8000
     read_timeout: 60
     write_timeout: 60
-  mode: "debug" # debug, test, release
+  mode: "debug"
 ```
 
-#### 📝 日志管理
+</details>
 
-ThinkGin2.0 集成了高性能的 **Logrus** 日志管理器，这是目前 GitHub 上 Star 最多的 Go 语言日志库。
+---
 
-##### 日志特性
+## 📝 日志系统
 
-- 🚀 **高性能**: 基于 Logrus (GitHub 25.3k+ stars) 的高性能日志库
-- 📊 **结构化日志**: 支持 JSON 和 Text 两种格式
-- 🔄 **自动轮转**: 支持按时间和大小自动切割日志文件
-- 📝 **多级别**: 支持 trace, debug, info, warn, error, fatal, panic 7 个级别
-- ⚙️ **配置化**: 所有日志设置都可通过配置文件调整
-- 🎯 **中间件**: 自动记录所有 HTTP 请求日志
-- 💼 **业务日志**: 便捷的业务日志记录接口
+基于 **Logrus** 的高性能结构化日志系统，GitHub 25k+ Stars。
 
-##### 配置说明
+### ✨ 核心特性
 
-在 `config/log.yaml` 文件中可以配置日志相关参数：
+- 🚀 **高性能**: 异步日志写入，零阻塞
+- 📊 **结构化**: JSON/Text 双格式支持
+- 🔄 **自动轮转**: 按时间/大小自动切割
+- 📝 **多级别**: 7 个日志级别精准控制
+- 🎯 **业务友好**: 简洁的业务日志 API
 
-```yaml
-log:
-  # 默认日志配置
-  default:
-    driver: "file" # file, console, syslog
-    level: "info" # trace, debug, info, warn, error, fatal, panic
-    format: "json" # json, text
+### 📊 日志级别
 
-  # 文件日志配置
-  file:
-    path: "runtime/log"
-    filename: "system"
-    max_age: 7 # 保存天数
-    rotation_time: 24 # 切割时间间隔（小时）
-    max_size: 100 # 单个文件最大大小（MB）
-    compress: true # 是否压缩旧文件
+| 级别    | 使用场景 | 示例             |
+| ------- | -------- | ---------------- |
+| `trace` | 详细跟踪 | 函数进入/退出    |
+| `debug` | 调试信息 | 变量值、流程状态 |
+| `info`  | 一般信息 | 业务流程记录     |
+| `warn`  | 警告信息 | 潜在问题提醒     |
+| `error` | 错误信息 | 异常处理         |
+| `fatal` | 致命错误 | 程序无法继续     |
+| `panic` | 恐慌级别 | 触发 panic       |
 
-  # 特定类型日志配置
-  channels:
-    # 访问日志
-    access:
-      driver: "file"
-      level: "info"
-      filename: "access"
-
-    # 错误日志
-    error:
-      driver: "file"
-      level: "error"
-      filename: "error"
-
-    # SQL 日志
-    sql:
-      driver: "file"
-      level: "debug"
-      filename: "sql"
-      enabled: false # 是否启用 SQL 日志
-```
-
-##### 使用方法
-
-**1. HTTP 请求自动日志**
-
-框架会自动记录所有 HTTP 请求的详细信息，包括：
-
-- 请求方法和路径
-- 状态码和响应时间
-- 客户端 IP 和 User-Agent
-- 时间戳
-
-**2. 业务日志记录**
-
-在控制器或其他业务逻辑中使用：
+### 💻 使用方法
 
 ```go
 import "thinkgin/extend/middleware"
@@ -549,9 +830,7 @@ curl -u monitor:your_secure_password http://localhost:8000/metrics
 3. 导入预置仪表板或创建自定义仪表板
 4. 创建告警规则监控关键指标
 
-通过这套完整的监控体系，您可以实时了解应用的运行状态和性能表现。
-
-#### 🗄️ 其他配置模块
+### 🗄️ 其他配置模块
 
 - **🗄️ 数据库配置** (`config/database.yaml`): 支持 MySQL、PostgreSQL、SQLite、Redis
 - **🚀 缓存配置** (`config/cache.yaml`): 支持 Redis、内存、文件缓存
@@ -564,87 +843,60 @@ curl -u monitor:your_secure_password http://localhost:8000/metrics
 
 通过这个完整的模块化配置系统，你可以轻松管理应用程序的各个方面，实现配置的分离和模块化管理。
 
-#### 常见问题
+---
 
-- goland 导入包爆红的问题的解决方案（成功解决 Nice）：
-  `GOPROXY=https://goproxy.cn,direct`
-  ![img_1.png](https://gitee.com/goubiwanyi/thinkgin/raw/master/img/img_1.png)
+## 🛠️ 开发指南
 
-#### 路由规范
+### 🛣️ 路由规范
 
-###### 路由编写文件：`route/router.go`
+**路由文件**: `route/router.go`
 
-###### 访问示例：`http://thinkgin.cn:8000/index/hello`
-
-```azure
-{
-    "code": 200,
-    "data": {
-        "Time": "2023-02-01T10:11:41.76127929+08:00",
-        "data": "Hello ThinkGin!",
-        "name": ""
-    },
-    "msg": "ok"
+```go
+// 示例路由定义
+func SetupRoutes(r *gin.Engine) {
+    api := r.Group("/api/v1")
+    {
+        api.GET("/users", controller.GetUsers)
+        api.POST("/users", controller.CreateUser)
+        api.PUT("/users/:id", controller.UpdateUser)
+        api.DELETE("/users/:id", controller.DeleteUser)
+    }
 }
 ```
 
-#### 📦 编译与部署
+**访问示例**:
 
-##### Windows 编译
+- API: `http://localhost:8000/index/hello`
+- 响应格式:
 
-```bash
-# 设置环境变量
-go env -w GO111MODULE=on
-go env -w GOPROXY=https://goproxy.cn,direct
-
-# 编译 Windows 可执行文件
-go build -o thinkgin.exe
-
-# 直接运行
-./thinkgin.exe
+```json
+{
+  "code": 200,
+  "data": {
+    "Time": "2023-02-01T10:11:41.761Z",
+    "data": "Hello ThinkGin!",
+    "name": ""
+  },
+  "msg": "ok"
+}
 ```
 
-##### Linux 编译
+### 🎨 开发最佳实践
 
-```bash
-# 设置环境变量
-go env -w GO111MODULE=on
-go env -w GOPROXY=https://goproxy.cn,direct
+- 📁 **目录规范**: 按模块组织代码结构
+- 🔧 **配置驱动**: 所有环境变量通过配置文件管理
+- 📝 **日志规范**: 使用结构化日志记录关键信息
+- 🧪 **测试覆盖**: 编写单元测试和集成测试
+- 📊 **监控埋点**: 在关键业务流程添加监控指标
 
-# 编译 Linux 可执行文件
-go build -o thinkgin
+---
 
-# 直接运行
-./thinkgin
+## 📦 部署指南
 
-# 或后台执行
-nohup ./thinkgin 1>info.log 2>&1 &
-```
-
-##### 跨平台编译
-
-```bash
-# 编译 Linux 版本 (在 Windows 上)
-SET GOOS=linux
-SET GOARCH=amd64
-go build -o thinkgin-linux
-
-# 编译 macOS 版本 (在 Windows 上)
-SET GOOS=darwin
-SET GOARCH=amd64
-go build -o thinkgin-macos
-
-# 编译 Windows 版本 (在 Linux/macOS 上)
-GOOS=windows GOARCH=amd64 go build -o thinkgin.exe
-```
-
-##### Docker 部署
-
-创建 `Dockerfile`:
+### 🐳 Docker 部署 (推荐)
 
 ```dockerfile
-FROM golang:1.19-alpine AS builder
-
+FROM golang:1.20-alpine AS builder
 WORKDIR /app
 COPY . .
 RUN go mod tidy && go build -o thinkgin
@@ -654,21 +906,51 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 COPY --from=builder /app/thinkgin .
 COPY --from=builder /app/config ./config
-
 CMD ["./thinkgin"]
 ```
 
-构建和运行：
-
 ```bash
-# 构建镜像
+# 构建和运行
 docker build -t thinkgin:v2.0 .
-
-# 运行容器
 docker run -p 8000:8000 thinkgin:v2.0
 ```
 
-##### 📝 重要说明
+### 🏗️ 编译部署
+
+<details>
+<summary><strong>🖥️ 不同平台编译</strong></summary>
+
+**本地编译**
+
+```bash
+go build -o thinkgin main.go
+```
+
+**跨平台编译**
+
+```bash
+# Linux
+GOOS=linux GOARCH=amd64 go build -o thinkgin-linux
+# Windows
+GOOS=windows GOARCH=amd64 go build -o thinkgin.exe
+# macOS
+GOOS=darwin GOARCH=amd64 go build -o thinkgin-macos
+```
+
+**后台运行**
+
+```bash
+# Linux 后台运行
+nohup ./thinkgin 1>info.log 2>&1 &
+
+# 使用 systemd 管理
+sudo systemctl enable thinkgin
+sudo systemctl start thinkgin
+```
+
+</details>
+
+### 📝 重要说明
 
 > **为什么删除了 thinkgin.exe？**
 >
@@ -680,3 +962,129 @@ docker run -p 8000:8000 thinkgin:v2.0
 > **如何重新生成可执行文件？**
 >
 > 只需运行对应平台的编译命令即可重新生成，编译过程通常只需几秒钟。
+
+---
+
+## ❓ 常见问题
+
+### 🚨 异常处理
+
+<details>
+<summary><strong>⚠️ 常见错误及解决方案</strong></summary>
+
+#### 1. Go 版本过低
+
+```bash
+# 错误: go: thinkgin requires go >= 1.18
+# 解决: 升级 Go 版本
+brew install go  # macOS
+# 或下载最新版本: https://golang.org/dl/
+```
+
+#### 2. 端口占用
+
+```bash
+# 错误: listen tcp :8000: bind: address already in use
+# 解决:
+lsof -ti:8000 | xargs kill -9  # Linux/macOS
+netstat -ano | findstr :8000   # Windows
+```
+
+#### 3. 网络连接问题
+
+```bash
+# 错误: dial tcp: lookup proxy.golang.org: no such host
+# 解决: 配置国内代理
+go env -w GOPROXY=https://goproxy.cn,direct
+```
+
+#### 4. 模块依赖问题
+
+```bash
+# 清理并重新下载依赖
+go clean -modcache
+go mod download
+go mod tidy
+```
+
+#### 5. 权限问题
+
+```bash
+# Linux/macOS
+chmod +x thinkgin
+sudo mkdir runtime
+sudo chown $USER:$USER runtime
+```
+
+#### 6. 配置文件问题
+
+```bash
+# 检查配置文件是否存在
+ls -la config/
+
+# 检查 YAML 语法
+pip install yamllint
+yamllint config/app.yaml
+```
+
+#### 7. 内存不足
+
+```bash
+# 检查系统内存
+free -h  # Linux
+vm_stat  # macOS
+
+# 调整 Go 垃圾回收
+export GOGC=50  # 更频繁的垃圾回收
+export GOMEMLIMIT=512MB  # 限制内存使用 (Go 1.19+)
+```
+
+</details>
+
+### 🔍 故障排查
+
+```bash
+# 环境检查
+go version && go env
+
+# 网络测试
+curl -I https://goproxy.cn
+
+# 端口检查
+netstat -tlnp | grep :8000
+
+# 日志查看
+tail -f runtime/log/system.log
+```
+
+### 📞 获取帮助
+
+遇到问题时，请按顺序检查：
+
+1. **📋 检查日志**: `runtime/log/` 目录下的错误信息
+2. **⚙️ 验证配置**: 确保 `config/` 目录下 YAML 文件语法正确
+3. **🔧 环境诊断**: 运行 `go env` 检查环境配置
+4. **🐛 提交 Issue**: 在 GitHub 提供详细的错误信息
+
+---
+
+## 🤝 贡献指南
+
+欢迎贡献代码！请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 了解详细流程。
+
+## 📄 许可证
+
+本项目采用 [MIT](LICENSE) 许可证。
+
+---
+
+<div align="center">
+
+**⭐ 如果这个项目对您有帮助，请给个 Star ⭐**
+
+[🏠 主页](https://github.com/your-repo/thinkgin) ·
+[📚 文档](https://docs.thinkgin.com) ·
+[🐛 报告问题](https://github.com/your-repo/thinkgin/issues) ·
+[💡 功能建议](https://github.com/your-repo/thinkgin/discussions)
+
+</div>
