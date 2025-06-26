@@ -28,6 +28,7 @@ type GlobalConfig struct {
 	Filesystem FilesystemConfig `yaml:"filesystem"`
 	Lang       LangConfig       `yaml:"lang"`
 	Trace      TraceConfig      `yaml:"trace"`
+	Prometheus PrometheusConfig `yaml:"prometheus"`
 }
 
 // 应用配置
@@ -45,6 +46,9 @@ type AppConfig struct {
 		PageSize    int `yaml:"page_size"`
 		MaxPageSize int `yaml:"max_page_size"`
 	} `yaml:"pagination"`
+	Monitoring struct {
+		PrometheusEnabled bool `yaml:"prometheus_enabled"`
+	} `yaml:"monitoring"`
 }
 
 // 服务器配置
@@ -234,6 +238,47 @@ type TraceConfig struct {
 	Operations []string          `yaml:"operations"`
 }
 
+// Prometheus监控配置
+type PrometheusConfig struct {
+	Enabled        bool                   `yaml:"enabled"`
+	Path           string                 `yaml:"path"`
+	Port           int                    `yaml:"port"`
+	ServiceName    string                 `yaml:"service_name"`
+	Namespace      string                 `yaml:"namespace"`
+	Labels         map[string]string      `yaml:"labels"`
+	Metrics        PrometheusMetricConfig `yaml:"metrics"`
+	ScrapeInterval int                    `yaml:"scrape_interval"`
+	Auth           struct {
+		Enabled  bool   `yaml:"enabled"`
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+	} `yaml:"auth"`
+}
+
+// Prometheus指标配置
+type PrometheusMetricConfig struct {
+	HTTP struct {
+		Enabled         bool   `yaml:"enabled"`
+		RequestsTotal   string `yaml:"requests_total"`
+		RequestDuration string `yaml:"request_duration"`
+		RequestSize     string `yaml:"request_size"`
+		ResponseSize    string `yaml:"response_size"`
+		IncludePath     bool   `yaml:"include_path"`
+	} `yaml:"http"`
+	System struct {
+		Enabled          bool   `yaml:"enabled"`
+		CPUUsage         string `yaml:"cpu_usage"`
+		MemoryUsage      string `yaml:"memory_usage"`
+		ProcessStartTime string `yaml:"process_start_time"`
+	} `yaml:"system"`
+	Business struct {
+		Enabled         bool   `yaml:"enabled"`
+		CounterPrefix   string `yaml:"counter_prefix"`
+		HistogramPrefix string `yaml:"histogram_prefix"`
+		GaugePrefix     string `yaml:"gauge_prefix"`
+	} `yaml:"business"`
+}
+
 var Config *GlobalConfig
 var Logger *logrus.Logger
 
@@ -262,6 +307,7 @@ func LoadConfig() {
 		"filesystem.yaml",
 		"lang.yaml",
 		"trace.yaml",
+		"prometheus.yaml",
 	}
 
 	// 逐个加载配置文件
@@ -342,6 +388,9 @@ func mergeConfig(tempConfig *GlobalConfig) {
 	if tempConfig.Trace.ServiceName != "" {
 		Config.Trace = tempConfig.Trace
 	}
+	if tempConfig.Prometheus.ServiceName != "" {
+		Config.Prometheus = tempConfig.Prometheus
+	}
 }
 
 // 设置默认配置
@@ -367,6 +416,20 @@ func setDefaultConfig() {
 	}
 	if Config.Log.File.Filename == "" {
 		Config.Log.File.Filename = "system"
+	}
+
+	// 设置Prometheus默认配置
+	if Config.Prometheus.ServiceName == "" {
+		Config.Prometheus.ServiceName = "thinkgin"
+	}
+	if Config.Prometheus.Path == "" {
+		Config.Prometheus.Path = "/metrics"
+	}
+	if Config.Prometheus.Namespace == "" {
+		Config.Prometheus.Namespace = "app"
+	}
+	if Config.Prometheus.ScrapeInterval == 0 {
+		Config.Prometheus.ScrapeInterval = 15
 	}
 }
 
@@ -455,4 +518,9 @@ func GetDatabaseConfig() *DatabaseConfig {
 // 获取日志配置
 func GetLogConfig() *LogConfig {
 	return &Config.Log
+}
+
+// 获取Prometheus配置
+func GetPrometheusConfig() *PrometheusConfig {
+	return &Config.Prometheus
 }

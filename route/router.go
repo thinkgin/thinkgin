@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"thinkgin/app"
 	"thinkgin/app/index/controller"
 	"thinkgin/extend/middleware"
 )
@@ -13,6 +14,12 @@ func InitRouter() *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(middleware.LoggerToFile()) // 记录日志
+
+	// 初始化Prometheus指标
+	middleware.InitPrometheusMetrics()
+
+	// 添加Prometheus监控中间件
+	r.Use(middleware.PrometheusMiddleware())
 
 	gin.SetMode(gin.ReleaseMode)
 
@@ -23,6 +30,12 @@ func InitRouter() *gin.Engine {
 	index := r.Group("/index/")
 	{
 		index.GET("/hello", controller.HelloWord)
+	}
+
+	// 添加Prometheus指标暴露端点
+	config := app.GetConfig()
+	if config.App.Monitoring.PrometheusEnabled && config.Prometheus.Enabled {
+		r.GET(config.Prometheus.Path, middleware.PrometheusHandler())
 	}
 
 	// 加载模板

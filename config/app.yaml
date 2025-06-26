@@ -15,3 +15,8 @@ app:
   pagination:
     page_size: 20
     max_page_size: 100
+
+  # 监控配置
+  monitoring:
+    # 普罗米修斯监控总开关
+    prometheus_enabled: false

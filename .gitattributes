@@ -1,0 +1,27 @@
+# 自动检测文本文件并规范化行尾符
+* text=auto
+
+# Go 源代码文件
+*.go text eol=lf
+
+# 配置文件
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+
+# Markdown 文档
+*.md text eol=lf
+
+# 模块文件
+go.mod text eol=lf
+go.sum text eol=lf
+
+# Windows 批处理文件应该使用 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制文件不处理
+*.exe binary
+*.png binary
+*.jpg binary
+*.gif binary
