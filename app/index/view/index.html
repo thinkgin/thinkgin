@@ -1,20 +1,517 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>ThinkGin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="keywords" content="ThinkGin,Go框架,高性能框架,Web框架,Gin框架,Go开发,后端开发,微服务,API开发,Golang,Go语言框架,RESTful API,高并发,轻量级框架">
+    <meta name="description" content="ThinkGin 2.0.1 - 为Go开发设计的高性能Web框架，基于Gin构建，提供更简单的开发体验和卓越的性能表现。支持高并发、微服务架构，是Go语言开发者的首选框架。">
+    <meta name="author" content="ThinkGin Team">
+    <meta name="robots" content="index,follow">
+    <meta property="og:title" content="ThinkGin - 高性能Go Web框架">
+    <meta property="og:description" content="为Go开发设计的高性能Web框架，让开发更简单，让性能更卓越">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://thinkgin.com">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ThinkGin - 高性能Go Web框架">
+    <meta name="twitter:description" content="为Go开发设计的高性能Web框架，让开发更简单，让性能更卓越">
+    <title>ThinkGin - 高性能Go框架 | 简单易用的Web开发框架</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 粒子背景效果 */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.7; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+        }
+
+        /* 主容器 */
+        .container {
+            position: relative;
+            z-index: 2;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* 主标题 */
+        .hero-title {
+            font-size: clamp(4rem, 8vw, 8rem);
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 20px;
+            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: slideInDown 1s ease-out;
+            background: linear-gradient(45deg, #fff, #f0f0f0, #fff);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 3s ease-in-out infinite, slideInDown 1s ease-out;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 副标题 */
+        .hero-subtitle {
+            font-size: clamp(1.5rem, 4vw, 3rem);
+            color: #fff;
+            margin-bottom: 10px;
+            opacity: 0.9;
+            animation: slideInUp 1s ease-out 0.2s both;
+        }
+
+        .hero-description {
+            font-size: clamp(1rem, 2.5vw, 1.8rem);
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 40px;
+            animation: slideInUp 1s ease-out 0.4s both;
+            max-width: 600px;
+        }
+
+        /* 按钮容器 */
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+            animation: slideInUp 1s ease-out 0.6s both;
+        }
+
+        /* 现代化按钮 */
+        .modern-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 1.1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modern-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .modern-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .modern-btn:hover::before {
+            left: 100%;
+        }
+
+        /* 特殊的Hello World按钮 */
+        .hello-btn {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            border: none;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .hello-btn:hover {
+            background: linear-gradient(45deg, #ff5252, #ffb142);
+            transform: translateY(-5px) scale(1.05);
+        }
+
+        /* 动画定义 */
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 版本标签 */
+        .version-badge {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.9rem;
+            font-weight: 600;
+            animation: slideInDown 1s ease-out 0.8s both;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .hero-title {
+                font-size: clamp(3rem, 7vw, 6rem);
+            }
+
+            .hero-subtitle {
+                font-size: clamp(1.2rem, 3.5vw, 2.5rem);
+            }
+
+            .hero-description {
+                font-size: clamp(0.9rem, 2.2vw, 1.5rem);
+                padding: 0 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .hero-title {
+                font-size: clamp(2.5rem, 10vw, 4rem);
+                margin-bottom: 15px;
+            }
+
+            .hero-subtitle {
+                font-size: clamp(1rem, 5vw, 2rem);
+                margin-bottom: 8px;
+            }
+
+            .hero-description {
+                font-size: clamp(0.85rem, 4vw, 1.2rem);
+                margin-bottom: 30px;
+                line-height: 1.5;
+            }
+
+            .button-container {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+                width: 100%;
+                max-width: 350px;
+                margin: 0 auto;
+            }
+
+            .modern-btn {
+                width: 100%;
+                padding: 18px 25px;
+                font-size: 1rem;
+                border-radius: 12px;
+                justify-content: center;
+                min-height: 56px; /* 触摸友好的最小高度 */
+            }
+
+            .version-badge {
+                top: 15px;
+                right: 15px;
+                font-size: 0.75rem;
+                padding: 6px 12px;
+            }
+
+            /* 减少移动端粒子数量 */
+            .particles {
+                opacity: 0.6;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+
+            .hero-title {
+                font-size: clamp(2rem, 12vw, 3.5rem);
+                margin-bottom: 12px;
+            }
+
+            .hero-subtitle {
+                font-size: clamp(0.9rem, 6vw, 1.5rem);
+                margin-bottom: 6px;
+            }
+
+            .hero-description {
+                font-size: clamp(0.8rem, 4.5vw, 1rem);
+                margin-bottom: 25px;
+                padding: 0 10px;
+            }
+
+            .button-container {
+                max-width: 300px;
+                gap: 12px;
+            }
+
+            .modern-btn {
+                padding: 16px 20px;
+                font-size: 0.95rem;
+                border-radius: 10px;
+            }
+
+            .version-badge {
+                top: 10px;
+                right: 10px;
+                font-size: 0.7rem;
+                padding: 5px 10px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .hero-title {
+                font-size: clamp(1.8rem, 14vw, 3rem);
+            }
+
+            .hero-description br {
+                display: none; /* 小屏幕上移除换行 */
+            }
+
+            .button-container {
+                max-width: 280px;
+            }
+
+            .modern-btn {
+                padding: 14px 18px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* 触摸设备优化 */
+        @media (hover: none) and (pointer: coarse) {
+            .modern-btn {
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .modern-btn:active {
+                transform: scale(0.98);
+                transition: transform 0.1s ease;
+            }
+
+            /* 禁用鼠标移动视差效果 */
+            .particle {
+                transform: none !important;
+            }
+        }
+
+        /* 横屏手机优化 */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .container {
+                justify-content: flex-start;
+                padding-top: 40px;
+            }
+
+            .hero-title {
+                font-size: clamp(2rem, 8vw, 3rem);
+                margin-bottom: 8px;
+            }
+
+            .hero-subtitle {
+                font-size: clamp(0.8rem, 4vw, 1.2rem);
+                margin-bottom: 5px;
+            }
+
+            .hero-description {
+                font-size: clamp(0.7rem, 3vw, 0.9rem);
+                margin-bottom: 15px;
+            }
+
+            .button-container {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                max-width: 100%;
+                gap: 10px;
+            }
+
+            .modern-btn {
+                width: auto;
+                padding: 12px 20px;
+                font-size: 0.85rem;
+                min-width: 120px;
+            }
+
+            .version-badge {
+                top: 10px;
+                right: 10px;
+                font-size: 0.7rem;
+            }
+        }
+
+        /* 底部装饰 */
+        .bottom-decoration {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.1));
+            z-index: 1;
+        }
+    </style>
 </head>
 <body>
-<style type="text/css">*{padding:0;margin:0}.think_default_text{padding:4px 48px}a{color:#2E5CD5;cursor:pointer;text-decoration:none}a:hover{text-decoration:underline}body{background:#fff;font-family:"CenturyGothic","Microsoft yahei";color:#333;font-size:18px}h1{font-size:100px;font-weight:normal;margin-bottom:12px}p{line-height:1.6em;font-size:42px}</style>
-<div style="padding: 24px 48px;"><h1>:)</h1>
-    <p>ThinkGin2.0.1<br/><span style="font-size:30px">十年磨一剑(目前磨了一年半)-为Go开发设计的高性能框架</span></p>
+    <!-- 粒子背景 -->
+    <div class="particles" id="particles"></div>
 
-    <a href="https://gitee.com/cww0128/thinkgin" title="官方源码下载" target="_blank">官方源码下载</a>
-    &nbsp;&nbsp;
-    <a href="https://github.com/gin-gonic/gin" title="特别鸣谢Gin" target="_blank">特别鸣谢Gin</a>
-    &nbsp;&nbsp;
-    <a href="/index/hello?name=ThinkGin" title="ThinkGin" target="_blank">Hello Word</a>
-</div>
+    <!-- 版本标签 -->
+    <div class="version-badge">v2.0.1</div>
 
+    <!-- 主容器 -->
+    <div class="container">
+        <h1 class="hero-title">ThinkGin</h1>
+        <div class="hero-subtitle">十年磨一剑</div>
+        <div class="hero-description">为Go开发设计的高性能框架<br>让开发更简单，让性能更卓越</div>
+
+        <div class="button-container">
+            <a href="https://gitee.com/cww0128/thinkgin" class="modern-btn" target="_blank">
+                📥 官方源码下载
+            </a>
+            <a href="https://github.com/gin-gonic/gin" class="modern-btn" target="_blank">
+                🙏 特别鸣谢Gin
+            </a>
+            <a href="/index/hello?name=ThinkGin" class="modern-btn hello-btn" target="_blank">
+                🚀 Hello World
+            </a>
+        </div>
+    </div>
+
+    <!-- 底部装饰 -->
+    <div class="bottom-decoration"></div>
+
+    <script>
+        // 创建粒子效果
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            // 根据设备类型调整粒子数量
+            const isMobile = window.innerWidth <= 768;
+            const particleCount = isMobile ? 25 : 50; // 移动端减少粒子数量
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+
+                // 随机位置和动画延迟
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
+
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // 检测是否为触摸设备
+        function isTouchDevice() {
+            return (('ontouchstart' in window) ||
+                   (navigator.maxTouchPoints > 0) ||
+                   (navigator.msMaxTouchPoints > 0));
+        }
+
+        // 页面加载完成后创建粒子
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+
+            // 只在非触摸设备上添加鼠标移动视差效果
+            if (!isTouchDevice()) {
+                document.addEventListener('mousemove', function(e) {
+                    const particles = document.querySelectorAll('.particle');
+                    const x = e.clientX / window.innerWidth;
+                    const y = e.clientY / window.innerHeight;
+
+                    particles.forEach((particle, index) => {
+                        const speed = (index % 5 + 1) * 0.5;
+                        const xMove = (x - 0.5) * speed;
+                        const yMove = (y - 0.5) * speed;
+
+                        particle.style.transform = `translate(${xMove}px, ${yMove}px)`;
+                    });
+                });
+            }
+
+            // 添加触摸反馈
+            const buttons = document.querySelectorAll('.modern-btn');
+            buttons.forEach(button => {
+                button.addEventListener('touchstart', function() {
+                    this.style.transform = 'scale(0.98)';
+                });
+
+                button.addEventListener('touchend', function() {
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 150);
+                });
+            });
+
+            // 窗口大小改变时重新创建粒子
+            let resizeTimeout;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    const particlesContainer = document.getElementById('particles');
+                    particlesContainer.innerHTML = '';
+                    createParticles();
+                }, 300);
+            });
+        });
+    </script>
 </body>
 </html>
