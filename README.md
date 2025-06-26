@@ -588,18 +588,95 @@ curl -u monitor:your_secure_password http://localhost:8000/metrics
 }
 ```
 
-#### Linux 打包
+#### 📦 编译与部署
 
-```azure
+##### Windows 编译
+
+```bash
+# 设置环境变量
 go env -w GO111MODULE=on
 go env -w GOPROXY=https://goproxy.cn,direct
-go build -o thinkgin.sh
+
+# 编译 Windows 可执行文件
+go build -o thinkgin.exe
+
+# 直接运行
+./thinkgin.exe
 ```
 
-##### 直接运行即可：
+##### Linux 编译
 
-`./thinkgin.sh`
+```bash
+# 设置环境变量
+go env -w GO111MODULE=on
+go env -w GOPROXY=https://goproxy.cn,direct
 
-##### 或后台执行：
+# 编译 Linux 可执行文件
+go build -o thinkgin
 
-`nohup ./thinkgin.sh 1>info.log 2>&1 &`
+# 直接运行
+./thinkgin
+
+# 或后台执行
+nohup ./thinkgin 1>info.log 2>&1 &
+```
+
+##### 跨平台编译
+
+```bash
+# 编译 Linux 版本 (在 Windows 上)
+SET GOOS=linux
+SET GOARCH=amd64
+go build -o thinkgin-linux
+
+# 编译 macOS 版本 (在 Windows 上)
+SET GOOS=darwin
+SET GOARCH=amd64
+go build -o thinkgin-macos
+
+# 编译 Windows 版本 (在 Linux/macOS 上)
+GOOS=windows GOARCH=amd64 go build -o thinkgin.exe
+```
+
+##### Docker 部署
+
+创建 `Dockerfile`:
+
+```dockerfile
+FROM golang:1.19-alpine AS builder
+
+WORKDIR /app
+COPY . .
+RUN go mod tidy && go build -o thinkgin
+
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+COPY --from=builder /app/thinkgin .
+COPY --from=builder /app/config ./config
+
+CMD ["./thinkgin"]
+```
+
+构建和运行：
+
+```bash
+# 构建镜像
+docker build -t thinkgin:v2.0 .
+
+# 运行容器
+docker run -p 8000:8000 thinkgin:v2.0
+```
+
+##### 📝 重要说明
+
+> **为什么删除了 thinkgin.exe？**
+>
+> 1. **版本控制最佳实践**: 不提交编译后的二进制文件到 Git 仓库
+> 2. **仓库体积控制**: 避免仓库变得臃肿（单个可执行文件约 20MB）
+> 3. **跨平台兼容性**: 不同操作系统需要不同的可执行文件
+> 4. **安全考虑**: 避免潜在的安全风险
+>
+> **如何重新生成可执行文件？**
+>
+> 只需运行对应平台的编译命令即可重新生成，编译过程通常只需几秒钟。

@@ -1,4 +1,50 @@
-bin
-log
-.idea
+# 编译后的二进制文件
+*.exe
+*.so
+*.dylib
+thinkgin
+thinkgin-*
+
+# 测试文件
+*.test
+
+# Go 模块缓存
+go.sum.backup
+
+# 运行时文件
+runtime/
+temp/
+tmp/
+
+# 日志文件
 *.log
+logs/
+
+# 临时文件
+nul
+*.tmp
+*.temp
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 配置文件 (如果包含敏感信息)
+# config/local.yaml
+
+# 上传文件
+public/uploads/*
+!public/uploads/.gitkeep
+
+# 依赖文件
+vendor/
+
+# Docker 相关
+.dockerignore
