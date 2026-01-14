@@ -1,4 +1,4 @@
-# ThinkGin 2.0
+# ThinkGin 3.0
 
 <div align="center">
 
@@ -8,7 +8,7 @@
 
 [![Go Version](https://img.shields.io/badge/Go-1.18+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/Release-v2.0-green.svg)](https://github.com/your-repo/thinkgin/releases)
+[![Release](https://img.shields.io/badge/Release-v3.0-green.svg)](https://github.com/your-repo/thinkgin/releases)
 
 </div>
 
@@ -30,11 +30,11 @@
 
 ## 🎯 项目介绍
 
-ThinkGin 2.0 是一个基于 Gin 框架的现代化 Go 语言 Web 应用框架，专注于提供：
+ThinkGin 3.0 是一个基于 Gin 框架的现代化 Go 语言 Web 应用框架，专注于提供：
 
 - ⚡ **高性能**: 基于 Gin 的高性能 HTTP 路由
 - 🔧 **模块化**: 完全模块化的配置管理系统
-- 📊 **可观测**: 完整的日志、监控、链路追踪体系
+- 📊 **可观测**: 日志、监控、链路追踪能力（逐步落地）
 - 🛡️ **企业级**: 生产环境就绪的安全性和稳定性
 - 🎨 **易用性**: 简洁优雅的 API 设计和丰富的文档
 
@@ -419,7 +419,7 @@ tail -f runtime/log/system.log  # 查看运行日志
 
 ## 📁 配置管理
 
-ThinkGin 2.0 采用**模块化配置架构**，将不同功能的配置分离到独立文件中：
+ThinkGin 3.0 采用**模块化配置架构**，将不同功能的配置分离到独立文件中：
 
 ### 🎛️ 配置架构
 
@@ -587,11 +587,12 @@ log:
 
 #### 📊 Prometheus 监控
 
-ThinkGin2.0 集成了 **Prometheus** 监控服务，提供完整的应用性能监控和业务指标采集功能。
+ThinkGin 3.0 集成了 **Prometheus** 监控服务，提供完整的应用性能监控和业务指标采集功能。
 
-> 📖 **详细使用指南**: [点击查看完整的 Prometheus 监控使用教程](./PROMETHEUS_GUIDE.md)
->
-> 该指南包含：从零开始的配置说明、详细的使用步骤、常见问题解决方案、最佳实践等完整内容。
+3.0 版本对 Prometheus 指标做了改进：
+
+- **scope 标签**：区分 `api/web/static/metrics`
+- **route 标签**：可按配置决定是否使用 Gin 的路由模板（避免 label 爆炸）
 
 ##### 🎯 监控特性
 
@@ -622,6 +623,11 @@ ThinkGin2.0 集成了 **Prometheus** 监控服务，提供完整的应用性能�
    ```bash
    curl http://localhost:8000/metrics
    ```
+
+##### ❤️ k8s 探针
+
+- `GET /livez`
+- `GET /readyz`
 
 ##### ⚙️ 配置说明
 
@@ -661,7 +667,7 @@ prometheus:
   # 自定义标签
   labels:
     environment: "development"
-    version: "2.0"
+    version: "3.0"
 
   # 监控指标配置
   metrics:
@@ -911,8 +917,8 @@ CMD ["./thinkgin"]
 
 ```bash
 # 构建和运行
-docker build -t thinkgin:v2.0 .
-docker run -p 8000:8000 thinkgin:v2.0
+docker build -t thinkgin:v3.0 .
+docker run -p 8000:8000 thinkgin:v3.0
 ```
 
 ### 🏗️ 编译部署
