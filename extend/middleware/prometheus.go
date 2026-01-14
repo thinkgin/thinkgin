@@ -3,6 +3,8 @@ package middleware
 import (
 	"runtime"
 	"strconv"
+	"strings"
+	"sync"
 	"thinkgin/app"
 	"time"
 
@@ -28,6 +30,10 @@ var (
 	businessCounters   map[string]*prometheus.CounterVec
 	businessHistograms map[string]*prometheus.HistogramVec
 	businessGauges     map[string]*prometheus.GaugeVec
+
+	metricsInitMu      sync.Mutex
+	metricsInitialized bool
+	businessMu         sync.RWMutex
 )
 
 // 初始化Prometheus指标
@@ -43,6 +49,13 @@ func InitPrometheusMetrics() {
 	if !config.Enabled {
 		return
 	}
+
+	metricsInitMu.Lock()
+	defer metricsInitMu.Unlock()
+	if metricsInitialized {
+		return
+	}
+	metricsInitialized = true
 
 	// 初始化业务指标映射
 	businessCounters = make(map[string]*prometheus.CounterVec)
@@ -64,7 +77,7 @@ func InitPrometheusMetrics() {
 				Help:        "Total number of HTTP requests",
 				ConstLabels: constLabels,
 			},
-			[]string{"method", "path", "status"},
+			[]string{"method", "scope", "route", "status"},
 		)
 
 		httpRequestDuration = promauto.NewHistogramVec(
@@ -75,7 +88,7 @@ func InitPrometheusMetrics() {
 				ConstLabels: constLabels,
 				Buckets:     prometheus.DefBuckets,
 			},
-			[]string{"method", "path"},
+			[]string{"method", "scope", "route"},
 		)
 
 		httpRequestSize = promauto.NewHistogramVec(
@@ -86,7 +99,7 @@ func InitPrometheusMetrics() {
 				ConstLabels: constLabels,
 				Buckets:     prometheus.ExponentialBuckets(100, 10, 8),
 			},
-			[]string{"method", "path"},
+			[]string{"method", "scope", "route"},
 		)
 
 		httpResponseSize = promauto.NewHistogramVec(
@@ -97,7 +110,7 @@ func InitPrometheusMetrics() {
 				ConstLabels: constLabels,
 				Buckets:     prometheus.ExponentialBuckets(100, 10, 8),
 			},
-			[]string{"method", "path"},
+			[]string{"method", "scope", "route"},
 		)
 	}
 
@@ -161,16 +174,13 @@ func PrometheusMiddleware() gin.HandlerFunc {
 
 		// 获取请求信息
 		method := c.Request.Method
-		path := c.FullPath()
-
-		// 如果不包含路径标签，使用通用路径
-		if !config.Metrics.HTTP.IncludePath {
-			path = "api"
-		}
+		path := c.Request.URL.Path
+		scope := detectScope(path)
+		route := detectRoute(c, config.Metrics.HTTP.IncludePath, scope)
 
 		// 记录请求大小
 		if httpRequestSize != nil && c.Request.ContentLength > 0 {
-			httpRequestSize.WithLabelValues(method, path).Observe(float64(c.Request.ContentLength))
+			httpRequestSize.WithLabelValues(method, scope, route).Observe(float64(c.Request.ContentLength))
 		}
 
 		// 处理请求
@@ -181,17 +191,43 @@ func PrometheusMiddleware() gin.HandlerFunc {
 		status := strconv.Itoa(c.Writer.Status())
 
 		if httpRequestsTotal != nil {
-			httpRequestsTotal.WithLabelValues(method, path, status).Inc()
+			httpRequestsTotal.WithLabelValues(method, scope, route, status).Inc()
 		}
 
 		if httpRequestDuration != nil {
-			httpRequestDuration.WithLabelValues(method, path).Observe(duration.Seconds())
+			httpRequestDuration.WithLabelValues(method, scope, route).Observe(duration.Seconds())
 		}
 
 		if httpResponseSize != nil && c.Writer.Size() > 0 {
-			httpResponseSize.WithLabelValues(method, path).Observe(float64(c.Writer.Size()))
+			httpResponseSize.WithLabelValues(method, scope, route).Observe(float64(c.Writer.Size()))
 		}
 	}
+}
+
+func detectScope(path string) string {
+	p := strings.ToLower(path)
+	switch {
+	case strings.HasPrefix(p, "/api"):
+		return "api"
+	case strings.HasPrefix(p, "/static") || strings.HasPrefix(p, "/public") || strings.HasPrefix(p, "/uploads"):
+		return "static"
+	case p == "/metrics":
+		return "metrics"
+	default:
+		return "web"
+	}
+}
+
+func detectRoute(c *gin.Context, includePath bool, scope string) string {
+	if !includePath {
+		return scope
+	}
+
+	rp := c.FullPath()
+	if rp == "" {
+		return "unmatched"
+	}
+	return rp
 }
 
 // 系统资源监控协程
@@ -264,6 +300,20 @@ func BusinessCounter(name string, labels []string) *prometheus.CounterVec {
 
 	fullName := config.Metrics.Business.CounterPrefix + "_" + name
 
+	businessMu.RLock()
+	if businessCounters != nil {
+		if counter, exists := businessCounters[fullName]; exists {
+			businessMu.RUnlock()
+			return counter
+		}
+	}
+	businessMu.RUnlock()
+
+	businessMu.Lock()
+	defer businessMu.Unlock()
+	if businessCounters == nil {
+		businessCounters = make(map[string]*prometheus.CounterVec)
+	}
 	if counter, exists := businessCounters[fullName]; exists {
 		return counter
 	}
@@ -303,6 +353,20 @@ func BusinessHistogram(name string, labels []string, buckets []float64) *prometh
 
 	fullName := config.Metrics.Business.HistogramPrefix + "_" + name
 
+	businessMu.RLock()
+	if businessHistograms != nil {
+		if histogram, exists := businessHistograms[fullName]; exists {
+			businessMu.RUnlock()
+			return histogram
+		}
+	}
+	businessMu.RUnlock()
+
+	businessMu.Lock()
+	defer businessMu.Unlock()
+	if businessHistograms == nil {
+		businessHistograms = make(map[string]*prometheus.HistogramVec)
+	}
 	if histogram, exists := businessHistograms[fullName]; exists {
 		return histogram
 	}
@@ -347,6 +411,20 @@ func BusinessGauge(name string, labels []string) *prometheus.GaugeVec {
 
 	fullName := config.Metrics.Business.GaugePrefix + "_" + name
 
+	businessMu.RLock()
+	if businessGauges != nil {
+		if gauge, exists := businessGauges[fullName]; exists {
+			businessMu.RUnlock()
+			return gauge
+		}
+	}
+	businessMu.RUnlock()
+
+	businessMu.Lock()
+	defer businessMu.Unlock()
+	if businessGauges == nil {
+		businessGauges = make(map[string]*prometheus.GaugeVec)
+	}
 	if gauge, exists := businessGauges[fullName]; exists {
 		return gauge
 	}

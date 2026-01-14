@@ -32,23 +32,62 @@ func InitRouter() *gin.Engine {
 	// 注册监控路由
 	registerMonitoringRoutes(r)
 
+	// NoRoute
+	r.NoRoute(func(c *gin.Context) {
+		if middleware.IsAPIPath(c.Request.URL.Path) {
+			middleware.APIError(c, 404, 404, "not found")
+			return
+		}
+		c.AbortWithStatus(404)
+	})
+
 	return r
 }
 
 // registerGlobalMiddleware 注册全局中间件
 func registerGlobalMiddleware(r *gin.Engine) {
-	// 基础中间件
-	r.Use(gin.Logger())
-	r.Use(gin.Recovery())
+	config := app.GetConfig()
+	global := config.Middleware.Global
+	if len(global) == 0 {
+		// 默认启用
+		r.Use(middleware.Recovery())
+		r.Use(middleware.RequestID())
+		r.Use(middleware.AccessLogger())
+		middleware.InitPrometheusMetrics()
+		r.Use(middleware.PrometheusMiddleware())
+		return
+	}
 
-	// 自定义中间件
-	r.Use(middleware.LoggerToFile()) // 日志记录
+	hasPrometheus := false
 
-	// 初始化Prometheus指标
-	middleware.InitPrometheusMetrics()
+	for _, name := range global {
+		switch name {
+		case "cors":
+			r.Use(middleware.CORS())
+		case "recovery":
+			r.Use(middleware.Recovery())
+		case "logger":
+			r.Use(middleware.RequestID())
+			r.Use(middleware.AccessLogger())
+		case "rate_limit":
+			r.Use(middleware.RateLimit())
+		case "request_id":
+			r.Use(middleware.RequestID())
+		case "access_log":
+			r.Use(middleware.AccessLogger())
+		case "prometheus":
+			hasPrometheus = true
+			middleware.InitPrometheusMetrics()
+			r.Use(middleware.PrometheusMiddleware())
+		default:
+			// 未实现的中间件名称先忽略
+		}
+	}
 
-	// Prometheus监控中间件
-	r.Use(middleware.PrometheusMiddleware())
+	if !hasPrometheus {
+		middleware.InitPrometheusMetrics()
+		r.Use(middleware.PrometheusMiddleware())
+	}
 
 	// 这里可以添加更多全局中间件:
 	// r.Use(middleware.CORS())        // 跨域中间件
@@ -86,6 +125,20 @@ func registerAPIRoutes(r *gin.Engine) {
 // registerMonitoringRoutes 注册监控相关路由
 func registerMonitoringRoutes(r *gin.Engine) {
 	config := app.GetConfig()
+
+	// k8s 探针：进程存活检查
+	r.GET("/livez", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "ok",
+		})
+	})
+
+	// k8s 探针：就绪检查（后续可接入 DB/Redis 等依赖检查）
+	r.GET("/readyz", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "ok",
+		})
+	})
 
 	// 健康检查端点
 	r.GET("/ping", func(c *gin.Context) {
