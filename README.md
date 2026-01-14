@@ -1,9 +1,6 @@
 # ThinkGin 3.0
 
 <div align="center">
-
-![ThinkGin Logo](img.png)
-
 **🚀 基于 Gin 的高性能 Go Web 框架**
 
 [![Go Version](https://img.shields.io/badge/Go-1.18+-00ADD8?style=flat&logo=go)](https://golang.org/)
