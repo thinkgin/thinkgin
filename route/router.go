@@ -52,6 +52,7 @@ func registerGlobalMiddleware(r *gin.Engine) {
 		// 默认启用
 		r.Use(middleware.Recovery())
 		r.Use(middleware.RequestID())
+		r.Use(middleware.TraceMiddleware())
 		r.Use(middleware.AccessLogger())
 		middleware.InitPrometheusMetrics()
 		r.Use(middleware.PrometheusMiddleware())
@@ -75,6 +76,8 @@ func registerGlobalMiddleware(r *gin.Engine) {
 			r.Use(middleware.RequestID())
 		case "access_log":
 			r.Use(middleware.AccessLogger())
+		case "trace":
+			r.Use(middleware.TraceMiddleware())
 		case "prometheus":
 			hasPrometheus = true
 			middleware.InitPrometheusMetrics()

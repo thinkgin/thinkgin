@@ -486,7 +486,7 @@ func setDefaultConfig() {
 		Config.App.Name = "ThinkGin"
 	}
 	if Config.App.Version == "" {
-		Config.App.Version = "2.0.1"
+		Config.App.Version = "3.0.0"
 	}
 	if Config.Server.HTTP.Host == "" {
 		Config.Server.HTTP.Host = "0.0.0.0"
