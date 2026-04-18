@@ -2,6 +2,7 @@ package route
 
 import (
 	"thinkgin/app/index/controller"
+	"thinkgin/extend/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -10,6 +11,7 @@ import (
 func RegisterAPIRoutes(r *gin.Engine) {
 	// API根路径
 	api := r.Group("/api")
+	api.Use(middleware.APIErrorHandler())
 	{
 		// API v1 版本
 		v1 := api.Group("/v1")

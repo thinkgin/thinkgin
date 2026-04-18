@@ -23,6 +23,11 @@ middleware:
 
   # 中间件配置
   config:
+    # 请求日志配置（用于 access log）
+    request_log:
+      # 跳过记录的路径
+      skip_paths: ["/metrics", "/ping", "/livez", "/readyz"]
+
     # CORS 跨域配置
     cors:
       allow_origins: ["*"]

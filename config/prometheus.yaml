@@ -18,7 +18,7 @@ prometheus:
   # 自定义标签
   labels:
     environment: "development"
-    version: "2.0"
+    version: "3.0"
 
   # 监控指标配置
   metrics:

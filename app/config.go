@@ -1,10 +1,12 @@
 package app
 
 import (
+	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -293,104 +295,188 @@ func init() {
 func LoadConfig() {
 	configDir := "config"
 
-	// 配置文件列表
-	configFiles := []string{
-		"app.yaml",
-		"server.yaml",
-		"database.yaml",
-		"cache.yaml",
-		"log.yaml",
-		"session.yaml",
-		"middleware.yaml",
-		"route.yaml",
-		"view.yaml",
-		"filesystem.yaml",
-		"lang.yaml",
-		"trace.yaml",
-		"prometheus.yaml",
+	loaders := []struct {
+		file string
+		fn   func(string) error
+	}{
+		{"app.yaml", func(p string) error { return loadInto("app", p, &Config.App) }},
+		{"server.yaml", func(p string) error { return loadInto("server", p, &Config.Server) }},
+		{"database.yaml", func(p string) error { return loadInto("database", p, &Config.Database) }},
+		{"cache.yaml", func(p string) error { return loadInto("cache", p, &Config.Cache) }},
+		{"log.yaml", func(p string) error { return loadInto("log", p, &Config.Log) }},
+		{"session.yaml", func(p string) error { return loadInto("session", p, &Config.Session) }},
+		{"middleware.yaml", func(p string) error { return loadInto("middleware", p, &Config.Middleware) }},
+		{"route.yaml", func(p string) error { return loadInto("route", p, &Config.Route) }},
+		{"view.yaml", func(p string) error { return loadInto("view", p, &Config.View) }},
+		{"filesystem.yaml", func(p string) error { return loadInto("filesystem", p, &Config.Filesystem) }},
+		{"lang.yaml", func(p string) error { return loadInto("lang", p, &Config.Lang) }},
+		{"trace.yaml", func(p string) error { return loadInto("trace", p, &Config.Trace) }},
+		{"prometheus.yaml", func(p string) error { return loadInto("prometheus", p, &Config.Prometheus) }},
 	}
 
-	// 逐个加载配置文件
-	for _, configFile := range configFiles {
-		configPath := filepath.Join(configDir, configFile)
-		if err := loadConfigFile(configPath); err != nil {
-			fmt.Printf("加载配置文件 %s 失败: %v\n", configFile, err)
-			// 继续加载其他配置文件
+	for _, l := range loaders {
+		configPath := filepath.Join(configDir, l.file)
+		if err := l.fn(configPath); err != nil {
+			fmt.Printf("加载配置文件 %s 失败: %v\n", l.file, err)
 		}
 	}
 
-	// 设置默认配置
 	setDefaultConfig()
+	applyEnvOverrides()
+	validateConfig()
 }
 
-// 加载单个配置文件
-func loadConfigFile(configPath string) error {
-	// 检查文件是否存在
+func loadInto[T any](rootKey string, configPath string, dst *T) error {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return fmt.Errorf("配置文件不存在: %s", configPath)
 	}
 
-	// 读取文件内容
-	data, err := ioutil.ReadFile(configPath)
+	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return fmt.Errorf("读取配置文件失败: %v", err)
 	}
+	data = bytes.TrimSpace(data)
+	if len(data) == 0 {
+		return fmt.Errorf("配置文件为空: %s", configPath)
+	}
 
-	// 解析YAML并合并到全局配置
-	var tempConfig GlobalConfig
-	if err := yaml.Unmarshal(data, &tempConfig); err != nil {
+	var m map[string]T
+	if err := yaml.Unmarshal(data, &m); err != nil {
 		return fmt.Errorf("解析YAML失败: %v", err)
 	}
 
-	// 合并配置（这里可以根据需要实现更复杂的合并逻辑）
-	mergeConfig(&tempConfig)
+	v, ok := m[rootKey]
+	if !ok {
+		return fmt.Errorf("缺少根节点 %s", rootKey)
+	}
 
+	*dst = v
 	return nil
 }
 
-// 合并配置
-func mergeConfig(tempConfig *GlobalConfig) {
-	// 使用反射或手动合并配置
-	// 这里简化处理，直接覆盖非零值
-	if tempConfig.App.Name != "" {
-		Config.App = tempConfig.App
+func applyEnvOverrides() {
+	const prefix = "THINKGIN_"
+
+	if v := os.Getenv(prefix + "SERVER_MODE"); v != "" {
+		Config.Server.Mode = v
 	}
-	if tempConfig.Server.HTTP.Port != 0 {
-		Config.Server = tempConfig.Server
+	if v := os.Getenv(prefix + "SERVER_HTTP_HOST"); v != "" {
+		Config.Server.HTTP.Host = v
 	}
-	if tempConfig.Database.Default != "" {
-		Config.Database = tempConfig.Database
+	if v := getenvInt(prefix + "SERVER_HTTP_PORT"); v != nil {
+		Config.Server.HTTP.Port = *v
 	}
-	if tempConfig.Cache.Default != "" {
-		Config.Cache = tempConfig.Cache
+	if v := getenvInt(prefix + "SERVER_HTTP_READ_TIMEOUT"); v != nil {
+		Config.Server.HTTP.ReadTimeout = *v
 	}
-	if tempConfig.Log.Default.Driver != "" {
-		Config.Log = tempConfig.Log
+	if v := getenvInt(prefix + "SERVER_HTTP_WRITE_TIMEOUT"); v != nil {
+		Config.Server.HTTP.WriteTimeout = *v
 	}
-	if tempConfig.Session.Driver != "" {
-		Config.Session = tempConfig.Session
+	if v := getenvInt(prefix + "SERVER_HTTP_IDLE_TIMEOUT"); v != nil {
+		Config.Server.HTTP.IdleTimeout = *v
 	}
-	if len(tempConfig.Middleware.Global) > 0 {
-		Config.Middleware = tempConfig.Middleware
+	if v := getenvInt(prefix + "SERVER_HTTP_MAX_HEADER_BYTES"); v != nil {
+		Config.Server.HTTP.MaxHeaderBytes = *v
 	}
-	if tempConfig.Route.URL.CacheFile != "" {
-		Config.Route = tempConfig.Route
+
+	if v := getenvBool(prefix + "APP_DEBUG"); v != nil {
+		Config.App.Debug = *v
 	}
-	if tempConfig.View.Engine != "" {
-		Config.View = tempConfig.View
+
+	if v := os.Getenv(prefix + "LOG_LEVEL"); v != "" {
+		Config.Log.Default.Level = v
 	}
-	if tempConfig.Filesystem.Default != "" {
-		Config.Filesystem = tempConfig.Filesystem
+	if v := os.Getenv(prefix + "LOG_FORMAT"); v != "" {
+		Config.Log.Default.Format = v
 	}
-	if tempConfig.Lang.Default != "" {
-		Config.Lang = tempConfig.Lang
+	if v := os.Getenv(prefix + "LOG_PATH"); v != "" {
+		Config.Log.File.Path = v
 	}
-	if tempConfig.Trace.ServiceName != "" {
-		Config.Trace = tempConfig.Trace
+	if v := os.Getenv(prefix + "LOG_FILENAME"); v != "" {
+		Config.Log.File.Filename = v
 	}
-	if tempConfig.Prometheus.ServiceName != "" {
-		Config.Prometheus = tempConfig.Prometheus
+
+	if v := getenvBool(prefix + "APP_PROMETHEUS_ENABLED"); v != nil {
+		Config.App.Monitoring.PrometheusEnabled = *v
 	}
+	if v := getenvBool(prefix + "PROMETHEUS_ENABLED"); v != nil {
+		Config.Prometheus.Enabled = *v
+	}
+	if v := os.Getenv(prefix + "PROMETHEUS_PATH"); v != "" {
+		Config.Prometheus.Path = v
+	}
+}
+
+func validateConfig() {
+	mode := strings.ToLower(strings.TrimSpace(Config.Server.Mode))
+	if mode == "" {
+		Config.Server.Mode = "debug"
+	} else {
+		switch mode {
+		case "debug", "test", "release":
+			Config.Server.Mode = mode
+		default:
+			fmt.Printf("无效的 server.mode: %s\n", Config.Server.Mode)
+			Config.Server.Mode = "debug"
+		}
+	}
+
+	if Config.Server.HTTP.Host == "" {
+		Config.Server.HTTP.Host = "0.0.0.0"
+	}
+	if Config.Server.HTTP.Port <= 0 || Config.Server.HTTP.Port > 65535 {
+		fmt.Printf("无效的 server.http.port: %d\n", Config.Server.HTTP.Port)
+		Config.Server.HTTP.Port = 8000
+	}
+
+	if _, err := logrus.ParseLevel(strings.ToLower(strings.TrimSpace(Config.Log.Default.Level))); err != nil {
+		fmt.Printf("无效的 log.default.level: %s\n", Config.Log.Default.Level)
+		Config.Log.Default.Level = "info"
+	}
+
+	format := strings.ToLower(strings.TrimSpace(Config.Log.Default.Format))
+	if format == "" {
+		Config.Log.Default.Format = "json"
+	} else {
+		switch format {
+		case "json", "text":
+			Config.Log.Default.Format = format
+		default:
+			fmt.Printf("无效的 log.default.format: %s\n", Config.Log.Default.Format)
+			Config.Log.Default.Format = "json"
+		}
+	}
+
+	if Config.Log.File.Path == "" {
+		Config.Log.File.Path = "runtime/log"
+	}
+	if Config.Log.File.Filename == "" {
+		Config.Log.File.Filename = "system"
+	}
+}
+
+func getenvInt(key string) *int {
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return nil
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return nil
+	}
+	return &n
+}
+
+func getenvBool(key string) *bool {
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return nil
+	}
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		return nil
+	}
+	return &b
 }
 
 // 设置默认配置
@@ -400,10 +486,25 @@ func setDefaultConfig() {
 		Config.App.Name = "ThinkGin"
 	}
 	if Config.App.Version == "" {
-		Config.App.Version = "2.0.1"
+		Config.App.Version = "3.0.0"
+	}
+	if Config.Server.HTTP.Host == "" {
+		Config.Server.HTTP.Host = "0.0.0.0"
 	}
 	if Config.Server.HTTP.Port == 0 {
 		Config.Server.HTTP.Port = 8000
+	}
+	if Config.Server.HTTP.ReadTimeout == 0 {
+		Config.Server.HTTP.ReadTimeout = 60
+	}
+	if Config.Server.HTTP.WriteTimeout == 0 {
+		Config.Server.HTTP.WriteTimeout = 60
+	}
+	if Config.Server.HTTP.IdleTimeout == 0 {
+		Config.Server.HTTP.IdleTimeout = 120
+	}
+	if Config.Server.HTTP.MaxHeaderBytes == 0 {
+		Config.Server.HTTP.MaxHeaderBytes = 1048576
 	}
 	if Config.Log.Default.Level == "" {
 		Config.Log.Default.Level = "info"
@@ -416,6 +517,12 @@ func setDefaultConfig() {
 	}
 	if Config.Log.File.Filename == "" {
 		Config.Log.File.Filename = "system"
+	}
+	if Config.Log.File.MaxAge == 0 {
+		Config.Log.File.MaxAge = 30
+	}
+	if Config.Log.File.RotationTime == 0 {
+		Config.Log.File.RotationTime = 24
 	}
 
 	// 设置Prometheus默认配置

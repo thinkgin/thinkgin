@@ -1,7 +1,7 @@
 # 应用配置
 app:
   name: "ThinkGin"
-  version: "2.0.2"
+  version: "3.0.0"
   debug: true
   timezone: "Asia/Shanghai"
   locale: "zh-CN"
@@ -19,4 +19,4 @@ app:
   # 监控配置
   monitoring:
     # 普罗米修斯监控总开关
-    prometheus_enabled: false
+    prometheus_enabled: true
