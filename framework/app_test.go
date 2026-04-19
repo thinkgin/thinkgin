@@ -5,63 +5,71 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"thinkgin/app"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
-// TestNewApp 验证 App 创建
-func TestNewApp(t *testing.T) {
+// newTestConfig 构造一个可直接用于测试的最小配置。
+// 使用随机端口（Port=0）避免本地冲突。
+func newTestConfig() *app.GlobalConfig {
 	cfg := &app.GlobalConfig{}
 	cfg.App.Name = "TestApp"
 	cfg.App.Version = "3.0.0"
 	cfg.Server.HTTP.Host = "127.0.0.1"
-	cfg.Server.HTTP.Port = 0 // 随机端口
-	cfg.Server.Mode = "test"
+	cfg.Server.HTTP.Port = 0
+	cfg.Server.Mode = gin.TestMode
+	return cfg
+}
 
+func TestNew_AssemblesDependencies(t *testing.T) {
+	cfg := newTestConfig()
 	logger := logrus.New()
 
-	appInstance, err := New(
+	// 注入独立的 Gin 引擎，避免触发默认路由中的模板加载。
+	a, err := New(
 		WithConfig(cfg),
 		WithLogger(logger),
+		WithRouter(gin.New()),
 		WithShutdownTimeout(3*time.Second),
 	)
-
 	if err != nil {
 		t.Fatalf("New() error: %v", err)
 	}
-	if appInstance == nil {
-		t.Fatal("New() returned nil")
-	}
-	if appInstance.config != cfg {
+
+	if a.config != cfg {
 		t.Error("config not injected correctly")
 	}
-	if appInstance.logger != logger {
+	if a.logger != logger {
 		t.Error("logger not injected correctly")
 	}
-	if appInstance.shutdownTimeout != 3*time.Second {
-		t.Errorf("shutdownTimeout = %v, want 3s", appInstance.shutdownTimeout)
+	if a.shutdownTimeout != 3*time.Second {
+		t.Errorf("shutdownTimeout = %v, want 3s", a.shutdownTimeout)
+	}
+	if a.server == nil {
+		t.Error("http.Server should be initialised")
 	}
 }
 
-// TestOptions 验证所有 Option 函数
-func TestOptions(t *testing.T) {
+func TestOptions_Mutators(t *testing.T) {
 	a := &App{}
 
 	cfg := &app.GlobalConfig{}
 	WithConfig(cfg)(a)
 	if a.config != cfg {
-		t.Error("WithConfig failed")
+		t.Error("WithConfig did not set config")
 	}
 
 	logger := logrus.New()
 	WithLogger(logger)(a)
 	if a.logger != logger {
-		t.Error("WithLogger failed")
+		t.Error("WithLogger did not set logger")
 	}
 
-	WithAddress("0.0.0.0:9999")(a)
+	WithAddr("0.0.0.0:9999")(a)
 	if a.addr != "0.0.0.0:9999" {
-		t.Errorf("WithAddress = %s, want 0.0.0.0:9999", a.addr)
+		t.Errorf("WithAddr = %s, want 0.0.0.0:9999", a.addr)
 	}
 
 	WithShutdownTimeout(5 * time.Second)(a)
@@ -71,30 +79,31 @@ func TestOptions(t *testing.T) {
 
 	WithOpenBrowser(true)(a)
 	if !a.openBrowser {
-		t.Error("WithOpenBrowser failed")
+		t.Error("WithOpenBrowser did not toggle the flag")
+	}
+
+	// 非正数被忽略，保持原值。
+	WithShutdownTimeout(-1)(a)
+	if a.shutdownTimeout != 5*time.Second {
+		t.Error("negative shutdownTimeout should be ignored")
 	}
 }
 
-// TestAppShutdown 验证优雅停机
-func TestAppShutdown(t *testing.T) {
-	cfg := &app.GlobalConfig{}
-	cfg.Server.HTTP.Host = "127.0.0.1"
-	cfg.Server.HTTP.Port = 0
-	cfg.Server.Mode = "test"
-
-	logger := logrus.New()
-
-	appInstance, err := New(
-		WithConfig(cfg),
-		WithLogger(logger),
-		WithShutdownTimeout(1*time.Second),
+func TestShutdown_BeforeRunIsNoop(t *testing.T) {
+	a, err := New(
+		WithConfig(newTestConfig()),
+		WithLogger(logrus.New()),
+		WithRouter(gin.New()),
+		WithShutdownTimeout(time.Second),
 	)
 	if err != nil {
 		t.Fatalf("New() error: %v", err)
 	}
 
-	// Shutdown 不应 panic（即使 server 未启动）
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	appInstance.Shutdown(ctx)
+
+	if err := a.Shutdown(ctx); err != nil {
+		t.Errorf("Shutdown before Run should not error, got: %v", err)
+	}
 }

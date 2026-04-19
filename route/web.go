@@ -1,55 +1,28 @@
 package route
 
 import (
-"net/http"
+	"net/http"
 
-"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 
-"thinkgin/app"
-"thinkgin/app/index/controller"
+	"thinkgin/app"
+	"thinkgin/app/index/controller"
 )
 
-// RegisterWebRoutes 注册Web页面路由
+// RegisterWebRoutes 注册 HTML 页面路由。
+// 与 API 路由保持物理分离，便于未来独立服务化或下线。
 func RegisterWebRoutes(r *gin.Engine) {
-config := app.GetConfig()
+	cfg := app.GetConfig()
 
-// 首页路由
-r.GET("/", func(c *gin.Context) {
-c.HTML(http.StatusOK, "index.html", gin.H{
-"title":   config.App.Name,
-"version": config.App.Version,
-})
-})
+	// 首页：渲染 app/index/view/index.html。
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"title":   cfg.App.Name,
+			"version": cfg.App.Version,
+		})
+	})
 
-// 传统的Web页面路由组 (兼容现有路由)
-indexGroup := r.Group("/index")
-{
-indexGroup.GET("/hello", controller.HelloWord)
-// 可以添加更多页面路由:
-// indexGroup.GET("/about", controller.About)
-// indexGroup.GET("/contact", controller.Contact)
-}
-
-// 其他Web页面路由组
-// webGroup := r.Group("/web")
-// {
-//     webGroup.GET("/dashboard", controller.Dashboard)
-//     webGroup.GET("/profile", controller.Profile)
-// }
-
-// 用户相关页面 (如果需要)
-// userWebGroup := r.Group("/user")
-// {
-//     userWebGroup.GET("/login", controller.LoginPage)
-//     userWebGroup.GET("/register", controller.RegisterPage)
-//     userWebGroup.GET("/profile", controller.ProfilePage)
-// }
-
-// 管理后台页面 (如果需要)
-// adminGroup := r.Group("/admin")
-// {
-//     adminGroup.Use(middleware.AdminAuth()) // 管理员认证中间件
-//     adminGroup.GET("/", controller.AdminDashboard)
-//     adminGroup.GET("/users", controller.AdminUsers)
-// }
+	// 兼容旧版 /index/hello 页面跳转到 controller，方便演示请求闭环。
+	index := r.Group("/index")
+	index.GET("/hello", controller.HelloWord)
 }

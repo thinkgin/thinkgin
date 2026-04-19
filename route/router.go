@@ -1,3 +1,4 @@
+// Package route 负责 Gin 引擎的装配：全局中间件、静态资源、模板、业务路由及监控端点。
 package route
 
 import (
@@ -7,32 +8,31 @@ import (
 	"thinkgin/extend/middleware"
 )
 
-// InitRouter 初始化路由器 - 主入口点
+// defaultMiddlewareChain 描述 middleware.global 未配置时的兜底启用顺序。
+// 注意：Recovery 必须排在最前，用于兜底其他中间件内部的 panic。
+var defaultMiddlewareChain = []string{
+	"recovery",
+	"request_id",
+	"trace",
+	"access_log",
+	"prometheus",
+}
+
+// InitRouter 组装完整的 Gin 引擎。
+// 装配顺序严格：全局中间件 → 静态资源/模板 → Web → API → 监控 → NoRoute 兜底。
 func InitRouter() *gin.Engine {
 	r := gin.New()
 
-	// 配置获取
-	config := app.GetConfig()
+	cfg := app.GetConfig()
+	gin.SetMode(cfg.Server.Mode)
 
-	// 设置运行模式
-	gin.SetMode(config.Server.Mode)
-
-	// 注册全局中间件
-	registerGlobalMiddleware(r)
-
-	// 注册静态资源和模板
+	registerGlobalMiddleware(r, cfg)
 	registerStaticAndTemplates(r)
+	RegisterWebRoutes(r)
+	RegisterAPIRoutes(r)
+	registerMonitoringRoutes(r, cfg)
 
-	// 注册Web路由 (页面路由)
-	registerWebRoutes(r)
-
-	// 注册API路由 (版本化API)
-	registerAPIRoutes(r)
-
-	// 注册监控路由
-	registerMonitoringRoutes(r)
-
-	// NoRoute
+	// NoRoute：API 路径返回结构化 JSON，其余返回裸 404，避免 HTML 污染客户端。
 	r.NoRoute(func(c *gin.Context) {
 		if middleware.IsAPIPath(c.Request.URL.Path) {
 			middleware.APIError(c, 404, 404, "not found")
@@ -44,120 +44,68 @@ func InitRouter() *gin.Engine {
 	return r
 }
 
-// registerGlobalMiddleware 注册全局中间件
-func registerGlobalMiddleware(r *gin.Engine) {
-	config := app.GetConfig()
-	global := config.Middleware.Global
-	if len(global) == 0 {
-		// 默认启用
-		r.Use(middleware.Recovery())
-		r.Use(middleware.RequestID())
-		r.Use(middleware.TraceMiddleware())
-		r.Use(middleware.AccessLogger())
-		middleware.InitPrometheusMetrics()
-		r.Use(middleware.PrometheusMiddleware())
-		return
+// registerGlobalMiddleware 按配置列表精确注册全局中间件。
+// 若 middleware.global 为空则使用 defaultMiddlewareChain，不做任何隐式追加。
+func registerGlobalMiddleware(r *gin.Engine, cfg *app.GlobalConfig) {
+	chain := cfg.Middleware.Global
+	if len(chain) == 0 {
+		chain = defaultMiddlewareChain
 	}
-
-	hasPrometheus := false
-
-	for _, name := range global {
-		switch name {
-		case "cors":
-			r.Use(middleware.CORS())
-		case "recovery":
-			r.Use(middleware.Recovery())
-		case "logger":
-			r.Use(middleware.RequestID())
-			r.Use(middleware.AccessLogger())
-		case "rate_limit":
-			r.Use(middleware.RateLimit())
-		case "request_id":
-			r.Use(middleware.RequestID())
-		case "access_log":
-			r.Use(middleware.AccessLogger())
-		case "trace":
-			r.Use(middleware.TraceMiddleware())
-		case "prometheus":
-			hasPrometheus = true
-			middleware.InitPrometheusMetrics()
-			r.Use(middleware.PrometheusMiddleware())
-		default:
-			// 未实现的中间件名称先忽略
-		}
+	for _, name := range chain {
+		applyMiddleware(r, name)
 	}
-
-	if !hasPrometheus {
-		middleware.InitPrometheusMetrics()
-		r.Use(middleware.PrometheusMiddleware())
-	}
-
-	// 这里可以添加更多全局中间件:
-	// r.Use(middleware.CORS())        // 跨域中间件
-	// r.Use(middleware.RateLimit())   // 限流中间件
-	// r.Use(middleware.JWT())         // JWT认证中间件
 }
 
-// registerStaticAndTemplates 注册静态资源和模板
+// applyMiddleware 将单个中间件名映射到具体实现。
+// 未知名称被静默忽略，方便前向兼容。
+func applyMiddleware(r *gin.Engine, name string) {
+	switch name {
+	case "recovery":
+		r.Use(middleware.Recovery())
+	case "request_id":
+		r.Use(middleware.RequestID())
+	case "trace":
+		r.Use(middleware.TraceMiddleware())
+	case "logger", "access_log":
+		r.Use(middleware.AccessLogger())
+	case "cors":
+		r.Use(middleware.CORS())
+	case "rate_limit":
+		r.Use(middleware.RateLimit())
+	case "prometheus":
+		middleware.InitPrometheusMetrics()
+		r.Use(middleware.PrometheusMiddleware())
+	}
+}
+
+// registerStaticAndTemplates 注册静态资源目录与 HTML 模板。
+// 模板路径约定：app/<module>/view/<tpl>.html。
 func registerStaticAndTemplates(r *gin.Engine) {
-	// 静态文件服务
 	r.Static("/static", "./static")
 	r.Static("/public", "./public")
 	r.Static("/uploads", "./public/uploads")
-
-	// 模板加载 - 支持多模块模板
 	r.LoadHTMLGlob("app/*/view/*")
-
-	// 如果配置文件中定义了静态路径，可以使用配置
-	// config := app.GetConfig()
-	// if config.Server.Static.Path != "" {
-	//     r.Static(config.Server.Static.Route, config.Server.Static.Path)
-	// }
 }
 
-// registerWebRoutes 注册Web页面路由
-func registerWebRoutes(r *gin.Engine) {
-	RegisterWebRoutes(r)
-}
-
-// registerAPIRoutes 注册API路由
-func registerAPIRoutes(r *gin.Engine) {
-	RegisterAPIRoutes(r)
-}
-
-// registerMonitoringRoutes 注册监控相关路由
-func registerMonitoringRoutes(r *gin.Engine) {
-	config := app.GetConfig()
-
-	// k8s 探针：进程存活检查
+// registerMonitoringRoutes 注册 k8s 探针与 Prometheus 端点。
+// Prometheus 端点需同时满足总开关与模块开关都为 true 才会暴露。
+func registerMonitoringRoutes(r *gin.Engine, cfg *app.GlobalConfig) {
 	r.GET("/livez", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status": "ok",
-		})
+		c.JSON(200, gin.H{"status": "ok"})
 	})
-
-	// k8s 探针：就绪检查（后续可接入 DB/Redis 等依赖检查）
+	// /readyz 目前仅返回 ok，未来可串联 DB/Redis 等依赖探活。
 	r.GET("/readyz", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status": "ok",
-		})
+		c.JSON(200, gin.H{"status": "ok"})
 	})
-
-	// 健康检查端点
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status":  "ok",
 			"message": "pong",
-			"version": config.App.Version,
+			"version": cfg.App.Version,
 		})
 	})
 
-	// Prometheus监控端点
-	if config.App.Monitoring.PrometheusEnabled && config.Prometheus.Enabled {
-		r.GET(config.Prometheus.Path, middleware.PrometheusHandler())
+	if cfg.App.Monitoring.PrometheusEnabled && cfg.Prometheus.Enabled {
+		r.GET(cfg.Prometheus.Path, middleware.PrometheusHandler())
 	}
-
-	// 可以添加更多监控端点:
-	// r.GET("/health", HealthCheck)      // 详细健康检查
-	// r.GET("/metrics/custom", CustomMetrics) // 自定义指标
 }

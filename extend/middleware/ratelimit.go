@@ -1,3 +1,11 @@
+// 本文件实现基于 IP 的进程内令牌桶限流。
+//
+// 适用场景：
+//   - 单实例部署（令牌桶内存在进程堆中，不跨实例共享）。
+//   - 对恶意爬虫 / 简单防刷场景做最后一层兜底。
+//
+// 多实例部署时，令牌桶在各实例独立计数，整体配额会被放大 N 倍。
+// 如需全局限流，请改造为 Redis + Lua 或接入专门的限流网关。
 package middleware
 
 import (
@@ -10,11 +18,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// tokenBucket 单 IP 的令牌桶状态。
 type tokenBucket struct {
-	capacity int
-	tokens   float64
-	rate     float64
-	last     time.Time
+	capacity int       // 桶容量（同时也是每分钟上限）
+	tokens   float64   // 当前剩余令牌
+	rate     float64   // 每秒新增令牌数
+	last     time.Time // 上次填充令牌的时间
 }
 
 func (b *tokenBucket) allow(now time.Time) bool {

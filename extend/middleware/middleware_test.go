@@ -25,7 +25,7 @@ func TestIsAPIPath(t *testing.T) {
 		{"/index", false},
 		{"/", false},
 		{"/static/js/app.js", false},
-		{"/apiary", false}, // 以 /api 开头但不是 API 路径？当前实现会返回 true
+		{"/apiary", false}, // 前缀相同但不属于 API 路径族，必须返回 false
 	}
 	for _, tt := range tests {
 		got := IsAPIPath(tt.path)
