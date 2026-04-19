@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"thinkgin/app"
+	"thinkgin/app/database"
 	"thinkgin/extend/middleware"
 	"thinkgin/framework"
 )
@@ -51,6 +52,16 @@ func main() {
 	if cfg.App.Debug {
 		printBanner(cfg.App.Version)
 	}
+
+	// 初始化数据库连接池。失败仅记录错误，不阻塞启动，便于本地无 DB 环境开发。
+	if err := database.Init(); err != nil {
+		logger.Warnf("[database] 部分连接初始化失败: %v", err)
+	}
+	defer func() {
+		if err := database.CloseAll(); err != nil {
+			logger.Warnf("[database] 关闭连接时发生错误: %v", err)
+		}
+	}()
 
 	// 初始化链路追踪；若未启用 Tracer，返回的 shutdown 是 no-op。
 	shutdownTracer := middleware.InitTracer()
