@@ -318,6 +318,46 @@ rdb.Del(ctx, "key")
 
 ---
 
+## 八点五、Session
+
+### ThinkPHP
+
+```php
+session('user_id', 42);
+$id = session('user_id');
+session('user_id', null); // 删除
+```
+
+### ThinkGin
+
+```go
+import "thinkgin/app/session"
+
+// 在 config/middleware.yaml 的 global 列表里加上 "session"，或在某个 group 里 Use。
+// 然后业务代码：
+func Profile(c *gin.Context) {
+    s := session.From(c)
+    s.Set("user_id", 42)
+    _ = s.Save(c.Request.Context())
+
+    if v, ok := s.Get("user_id"); ok {
+        c.JSON(200, gin.H{"uid": v})
+    }
+}
+
+func Logout(c *gin.Context) {
+    _ = session.From(c).Destroy(c.Request.Context())
+    session.ClearCookie(c)
+}
+```
+
+**差异**：
+- Save 必须显式调用。框架不自动保存，避免遮蔽业务错误处理路径。
+- `config/session.yaml` 支持 `memory` 与 `redis` 两种 driver；`file` / `database` 尚未实现。
+- Cookie 的 `SameSite` / `HttpOnly` / `Secure` 标志与配置一一对应，默认就是安全取向。
+
+---
+
 ## 九、视图
 
 ### ThinkPHP
@@ -430,9 +470,13 @@ Recovery 中间件会把 panic 兜底转换为 500，无需业务自己 `defer r
 以下 ThinkPHP 用户可能期待的能力**当前未实现**，计划在后续版本逐步补齐：
 
 - [ ] Seeder / Migration 工具（当前只能 GORM `AutoMigrate`）
-- [ ] 命令行脚手架（`thinkgin new module user`）
 - [ ] 多环境配置（`config/dev/`、`config/prod/`）
-- [ ] Session Store 的运行时实现（目前只解析配置）
+- [ ] Session `file` / `database` driver（`memory` / `redis` 已可用）
 - [ ] 多语言 i18n 的运行时实现
+
+已落地：
+
+- [x] 命令行脚手架：`go run ./cmd/scaffold new module user` 生成 MVC 骨架
+- [x] Session 运行时：`memory` / `redis` driver、Gin 中间件、安全 Cookie
 
 如果某项阻塞了你的迁移，欢迎提 Issue。

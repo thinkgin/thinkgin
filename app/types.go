@@ -108,7 +108,8 @@ type LogConfig struct {
 	Channels map[string]interface{} `yaml:"channels"`
 }
 
-// SessionConfig 对应 config/session.yaml。NOTE: 配置已解析，运行时尚未接入。
+// SessionConfig 对应 config/session.yaml。
+// 运行时由 app/session 包消费，支持 memory / redis driver；file / database 待实现。
 type SessionConfig struct {
 	Driver        string `yaml:"driver"`
 	Name          string `yaml:"name"`

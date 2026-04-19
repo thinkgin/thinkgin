@@ -18,6 +18,7 @@ import (
 	"thinkgin/app"
 	"thinkgin/app/cache"
 	"thinkgin/app/database"
+	"thinkgin/app/session"
 	"thinkgin/extend/middleware"
 	"thinkgin/framework"
 )
@@ -71,6 +72,16 @@ func main() {
 	defer func() {
 		if err := cache.CloseAll(); err != nil {
 			logger.Warnf("[cache] 关闭客户端时发生错误: %v", err)
+		}
+	}()
+
+	// 初始化 Session 管理器。失败只告警，业务仍可跑，只是 session.Middleware 退化为 no-op。
+	if err := session.Init(); err != nil {
+		logger.Warnf("[session] 初始化失败: %v", err)
+	}
+	defer func() {
+		if err := session.Shutdown(); err != nil {
+			logger.Warnf("[session] 关闭时发生错误: %v", err)
 		}
 	}()
 

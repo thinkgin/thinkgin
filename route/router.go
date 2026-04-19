@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"thinkgin/app"
+	"thinkgin/app/session"
 	"thinkgin/extend/middleware"
 )
 
@@ -72,6 +73,8 @@ func applyMiddleware(r *gin.Engine, name string) {
 		r.Use(middleware.CORS())
 	case "rate_limit":
 		r.Use(middleware.RateLimit())
+	case "session":
+		r.Use(session.Middleware())
 	case "prometheus":
 		middleware.InitPrometheusMetrics()
 		r.Use(middleware.PrometheusMiddleware())

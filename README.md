@@ -18,7 +18,8 @@
 - **链路追踪** — OpenTelemetry TracerProvider；GORM 插件把 SQL 纳入同一条 trace
 - **优雅停机** — 信号监听 + 超时 + DB/Cache/Tracer 依序释放，适配 Kubernetes
 - **K8s 探针** — 内置 `/livez`、`/readyz`、`/ping` 端点
-- **可插拔中间件** — Recovery、RequestID、AccessLog、CORS、RateLimit、Trace、Prometheus
+- **可插拔中间件** — Recovery、RequestID、AccessLog、CORS、RateLimit、Trace、Prometheus、Session
+- **Session 运行时** — `memory` / `redis` 两种 Store，Cookie 安全标志自动透传（HttpOnly/Secure/SameSite）
 
 ## 项目结构
 
@@ -115,7 +116,7 @@ GOOS=darwin GOARCH=arm64 go build -o thinkgin-darwin main.go
 | `middleware.yaml` | 全局中间件启用列表 |
 | `prometheus.yaml` | 监控指标、认证、采集间隔 |
 | `trace.yaml` | 链路追踪开关、采样率、导出方式 |
-| `session.yaml` | 会话存储 |
+| `session.yaml` | 会话存储（`memory` / `redis` 已可用） |
 | `view.yaml` | 模板引擎 |
 | `filesystem.yaml` | 文件存储（本地/OSS） |
 | `lang.yaml` | 国际化 |
@@ -190,6 +191,48 @@ func ListUsers(c *gin.Context) {
     c.JSON(200, users)
 }
 ```
+
+## Session
+
+在 `config/middleware.yaml` 的 `global` 列表里加上 `session`，框架即自动挂载：
+
+```yaml
+middleware:
+  global:
+    - recovery
+    - request_id
+    - session
+```
+
+业务代码：
+
+```go
+import "thinkgin/app/session"
+
+func Profile(c *gin.Context) {
+    s := session.From(c)
+    s.Set("user_id", 42)
+    if err := s.Save(c.Request.Context()); err != nil {
+        c.AbortWithError(500, err)
+        return
+    }
+    c.JSON(200, gin.H{"ok": true})
+}
+
+func Logout(c *gin.Context) {
+    _ = session.From(c).Destroy(c.Request.Context())
+    session.ClearCookie(c)
+    c.JSON(200, gin.H{"ok": true})
+}
+```
+
+Store 切换仅需改 `config/session.yaml`：
+
+| driver | 状态 | 适用场景 |
+|--------|------|----------|
+| `memory` | 可用 | 单实例 / 开发调试 |
+| `redis`  | 可用 | 多副本部署，引用 `database.yaml` 中的 redis 连接 |
+| `file` / `database` | 未实现 | — |
 
 ## 脚手架 CLI
 
