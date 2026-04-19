@@ -15,6 +15,9 @@ go.sum.backup
 runtime/
 temp/
 tmp/
+database/*.db
+database/*.sqlite
+database/*.sqlite3
 
 # 日志文件
 *.log

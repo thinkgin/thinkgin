@@ -1,27 +1,31 @@
 # 缓存配置
+#
+# 默认不启用任何 store，cache.Init 空转直接返回 nil。
+# 需要 Redis 缓存时：先在 database.yaml 里打开 redis 连接，再把下方 stores 注释放出来。
 cache:
-  # 默认缓存驱动
+  # 默认缓存 store 名称；stores 中必须存在同名条目才会被 cache.Default() 命中。
   default: "redis"
 
-  # 缓存前缀
+  # 缓存键前缀，用于多租户或多应用共享 Redis 实例时隔离命名空间。
   prefix: "thinkgin_cache:"
 
-  # 缓存存储配置
-  stores:
-    # Redis 缓存
-    redis:
-      driver: "redis"
-      connection: "redis" # 引用 database.yaml 中的 redis 连接
+  # 命名 store 表。当前只实现 driver=redis；memory / file 为待实现。
+  stores: {}
 
-    # 内存缓存
-    memory:
-      driver: "memory"
-      max_size: 1000 # 最大缓存条目数
-
-    # 文件缓存
-    file:
-      driver: "file"
-      path: "runtime/cache"
+  # ---------- 可复制粘贴的示例 ----------
+  #
+  # stores:
+  #   redis:
+  #     driver: "redis"
+  #     connection: "redis"   # 引用 database.yaml.connections.redis
+  #
+  #   # memory / file 尚未实现，配置保留供将来扩展
+  #   # memory:
+  #   #   driver: "memory"
+  #   #   max_size: 1000
+  #   # file:
+  #   #   driver: "file"
+  #   #   path: "runtime/cache"
 
   # 缓存标签（用于批量清理）
   tags:

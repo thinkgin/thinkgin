@@ -1,7 +1,8 @@
 # Session 配置
 session:
-  # 驱动类型
-  driver: "file" # file, redis, memory, database
+  # 驱动类型：memory（默认，单进程可用）、redis（多实例部署）。
+  # file / database 尚未实现，配置此值会在启动时告警且会话能力回退为 no-op。
+  driver: "memory"
 
   # Session 名称
   name: "THINKGIN_SESSION"
