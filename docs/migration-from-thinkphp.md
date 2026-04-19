@@ -318,6 +318,40 @@ rdb.Del(ctx, "key")
 
 ---
 
+## 八点二、JWT 鉴权
+
+### ThinkPHP
+
+通常借助 `firebase/php-jwt` 或第三方包自行封装：
+
+```php
+$token = JWT::encode(['uid' => $user->id], $secret, 'HS256');
+$claims = JWT::decode($token, new Key($secret, 'HS256'));
+```
+
+### ThinkGin
+
+```go
+import "thinkgin/extend/middleware"
+
+// 签发
+token, err := middleware.JWTIssue("42", map[string]any{"role": "admin"}, 0) // 0 = 使用 app.jwt.expire
+
+// 保护路由：middleware.yaml 里 global 加 "jwt"，或分组 Use
+api := r.Group("/api/v1", middleware.JWTAuth())
+api.GET("/me", func(c *gin.Context) {
+    claims := middleware.JWTFromContext(c)
+    c.JSON(200, gin.H{"uid": claims.Subject, "role": claims.Extra["role"]})
+})
+```
+
+**差异**：
+- 密钥读 `config/app.yaml` 的 `app.jwt.secret`，为空时拒绝签发/校验。
+- 算法固定 HS256，显式拒绝 `alg=none`、非 HMAC 攻击。
+- 过期、签名非法、格式错误都统一走 `APIError(401)`，响应体对外隐藏内部细节。
+
+---
+
 ## 八点五、Session
 
 ### ThinkPHP

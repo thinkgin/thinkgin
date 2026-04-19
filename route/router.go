@@ -75,6 +75,8 @@ func applyMiddleware(r *gin.Engine, name string) {
 		r.Use(middleware.RateLimit())
 	case "session":
 		r.Use(session.Middleware())
+	case "jwt", "jwt_auth":
+		r.Use(middleware.JWTAuth())
 	case "prometheus":
 		middleware.InitPrometheusMetrics()
 		r.Use(middleware.PrometheusMiddleware())

@@ -20,6 +20,7 @@
 - **K8s 探针** — 内置 `/livez`、`/readyz`、`/ping` 端点
 - **可插拔中间件** — Recovery、RequestID、AccessLog、CORS、RateLimit、Trace、Prometheus、Session
 - **Session 运行时** — `memory` / `redis` 两种 Store，Cookie 安全标志自动透传（HttpOnly/Secure/SameSite）
+- **JWT 鉴权** — HS256 签发/校验，严格拒绝 `alg=none` 伪造；`JWTFromContext` 取 Claims
 
 ## 项目结构
 
@@ -233,6 +234,26 @@ Store 切换仅需改 `config/session.yaml`：
 | `memory` | 可用 | 单实例 / 开发调试 |
 | `redis`  | 可用 | 多副本部署，引用 `database.yaml` 中的 redis 连接 |
 | `file` / `database` | 未实现 | — |
+
+## JWT 鉴权
+
+密钥配置在 `config/app.yaml` 的 `app.jwt.secret`；过期时间 `app.jwt.expire`（秒）。
+
+```go
+import "thinkgin/extend/middleware"
+
+// 签发（ttl=0 时使用 app.jwt.expire；仍为 0 时兜底 2 小时）
+token, err := middleware.JWTIssue("42", map[string]any{"role": "admin"}, 0)
+
+// 保护路由：middleware.yaml 的 global 里加 "jwt"，或按 group 注入
+api := r.Group("/api/v1", middleware.JWTAuth())
+api.GET("/me", func(c *gin.Context) {
+    claims := middleware.JWTFromContext(c)
+    c.JSON(200, gin.H{"uid": claims.Subject})
+})
+```
+
+签名算法固定 HS256，解析时严格拒绝非 HMAC 算法，避免 `alg=none` 之类经典漏洞。
 
 ## 脚手架 CLI
 
