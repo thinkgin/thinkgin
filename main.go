@@ -55,6 +55,8 @@ func main() {
 		framework.WithConfig(cfg),
 		framework.WithLogger(logger),
 		framework.WithShutdownTimeout(10*time.Second),
+		// 仅在 app.debug=true 时生效，生产模式自动跳过。
+		framework.WithOpenBrowser(true),
 	)
 	if err != nil {
 		logger.Fatalf("app init failed: %v", err)

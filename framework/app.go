@@ -90,14 +90,18 @@ func (a *App) Run(ctx context.Context) error {
 	a.logger.Infof("server listening on http://%s", a.addr)
 	a.logger.Infof("mode=%s, app=%s v%s", a.config.Server.Mode, a.config.App.Name, a.config.App.Version)
 
-	if a.openBrowser && a.config.App.Debug {
-		tryOpenBrowser(fmt.Sprintf("http://%s", a.addr))
-	}
-
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- a.server.ListenAndServe()
 	}()
+
+	// 延迟异步打开浏览器，等待监听端口就绪；失败静默忽略。
+	if a.openBrowser && a.config.App.Debug {
+		go func() {
+			time.Sleep(300 * time.Millisecond)
+			tryOpenBrowser(fmt.Sprintf("http://%s", a.addr))
+		}()
+	}
 
 	select {
 	case <-ctx.Done():
