@@ -191,6 +191,19 @@ func ListUsers(c *gin.Context) {
 }
 ```
 
+## 脚手架 CLI
+
+生成新的业务模块骨架（MVC 三件套）：
+
+```bash
+go run ./cmd/scaffold new module user
+# app/user/controller/user.go
+# app/user/model/user.go
+# app/user/view/.gitkeep
+```
+
+命名规则：模块名必须以小写字母开头，只允许 `a-z / 0-9 / _`。
+
 ## 测试 & CI
 
 ```bash
