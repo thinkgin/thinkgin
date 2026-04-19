@@ -1,38 +1,22 @@
 # Session 配置
 session:
-  # 驱动类型：memory（默认，单进程可用）、redis（多实例部署）。
-  # file / database 尚未实现，配置此值会在启动时告警且会话能力回退为 no-op。
+  # 驱动类型：memory（默认，单进程）或 redis（多实例共享）。
   driver: "memory"
 
-  # Session 名称
+  # Cookie 名称
   name: "THINKGIN_SESSION"
 
   # 生存时间（秒）
-  lifetime: 7200 # 2小时
+  lifetime: 7200
 
-  # 过期时间提醒（秒）
-  expire_on_close: false
-
-  # 加密
-  encrypt: false
-
-  # 文件存储配置
-  file:
-    path: "runtime/session"
-
-  # Redis 存储配置
+  # 使用 redis driver 时引用的连接（对应 database.yaml 的 connections.<name>）
   redis:
-    connection: "redis" # 引用 database.yaml 中的 redis 连接
+    connection: "redis"
 
-  # 数据库存储配置
-  database:
-    table: "sessions"
-    connection: "mysql" # 引用 database.yaml 中的连接
-
-  # Cookie 配置
+  # Cookie 安全属性
   cookie:
     path: "/"
     domain: ""
     secure: false
     http_only: true
-    same_site: "lax" # lax, strict, none
+    same_site: "lax" # lax / strict / none

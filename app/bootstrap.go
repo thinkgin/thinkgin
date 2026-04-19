@@ -1,6 +1,14 @@
 package app
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+	"sync"
+)
+
+// bootstrapOnce 保证 Bootstrap 的"副作用部分"（加载 YAML、设默认、校验、初始化 Logger）
+// 在进程内最多执行一次。显式调用 Bootstrap(customDir) 会跳过 once，支持测试注入。
+var bootstrapOnce sync.Once
 
 // Bootstrap 是显式的初始化入口，执行顺序：
 //  1. 加载 configDir 下的所有 YAML
@@ -29,10 +37,18 @@ func Bootstrap(configDir string) error {
 // init 作为零配置兜底：当用户直接 import "thinkgin/app" 时，
 // 自动从默认路径加载配置，保证 GetConfig / GetLogger 立即可用。
 //
-// 显式控制场景（测试、嵌入式场景）应调用 Bootstrap 并传入自定义目录。
-// 加载错误会被打印但不会 panic，便于本地开发在没有 config/ 目录时也能启动。
+// 测试或工作目录不含 config/ 时直接跳过，避免污染 go test 的输出。
+// 真正需要从自定义目录加载时，显式调用 Bootstrap(dir) 即可。
 func init() {
-	if err := Bootstrap(defaultConfigDir); err != nil {
-		fmt.Printf("[bootstrap] 部分配置加载失败，已使用默认值: %v\n", err)
-	}
+	bootstrapOnce.Do(func() {
+		if _, err := os.Stat(defaultConfigDir); os.IsNotExist(err) {
+			// 没有 config/ 目录就什么都不做：依赖 defaults + env 已经够用。
+			setDefaultConfig()
+			InitLogger()
+			return
+		}
+		if err := Bootstrap(defaultConfigDir); err != nil {
+			fmt.Fprintf(os.Stderr, "[bootstrap] 部分配置加载失败，已使用默认值: %v\n", err)
+		}
+	})
 }

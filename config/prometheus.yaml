@@ -1,69 +1,28 @@
 # Prometheus 监控配置
 prometheus:
-  # 是否启用 Prometheus 监控
+  # 总开关：为 false 时不注册 /metrics，也不挂载 PrometheusMiddleware。
   enabled: true
 
-  # 监控指标暴露路径
+  # 指标暴露路径。保持默认即可，Prometheus 采集器的 scrape_configs 需要与之一致。
   path: "/metrics"
 
-  # 监控端口（0表示使用主服务端口）
-  port: 0
-
-  # 监控服务名称
+  # 指标命名前缀与服务名。影响所有自动注册的指标，确认后不要随意改动。
   service_name: "thinkgin"
-
-  # 监控命名空间
   namespace: "app"
 
-  # 自定义标签
-  labels:
-    environment: "development"
-    version: "3.0"
-
-  # 监控指标配置
+  # 分模块启停：关掉某个模块就不会注册对应指标。
   metrics:
-    # HTTP请求相关指标
+    # HTTP 四维：requests_total / request_duration / request_size / response_size
     http:
-      # 是否启用HTTP请求监控
       enabled: true
-      # 请求总数指标名称
-      requests_total: "http_requests_total"
-      # 请求持续时间指标名称
-      request_duration: "http_request_duration_seconds"
-      # 请求大小指标名称
-      request_size: "http_request_size_bytes"
-      # 响应大小指标名称
-      response_size: "http_response_size_bytes"
-      # 是否包含URL路径标签（可能产生大量标签）
+      # 是否在标签里包含完整 URL 路径。
+      # 警告：动态路径（如 /users/:id）会造成 label cardinality 爆炸，生产务必为 false。
       include_path: false
 
-    # 系统资源指标
+    # 系统指标：进程内存、启动时间。CPU 使用率需要 gopsutil 外部依赖，暂不提供。
     system:
-      # 是否启用系统资源监控
       enabled: true
-      # CPU使用率
-      cpu_usage: "system_cpu_usage_percent"
-      # 内存使用量
-      memory_usage: "system_memory_usage_bytes"
-      # 进程启动时间
-      process_start_time: "process_start_time_seconds"
 
-    # 业务指标
+    # 业务指标：middleware.BusinessCounter / BusinessHistogram / BusinessGauge
     business:
-      # 是否启用业务指标
       enabled: true
-      # 自定义业务计数器前缀
-      counter_prefix: "business_counter"
-      # 自定义业务直方图前缀
-      histogram_prefix: "business_histogram"
-      # 自定义业务仪表盘前缀
-      gauge_prefix: "business_gauge"
-
-  # 监控数据采集间隔（秒）
-  scrape_interval: 15
-
-  # 是否启用基础认证
-  auth:
-    enabled: false
-    username: "prometheus"
-    password: "secure_password"

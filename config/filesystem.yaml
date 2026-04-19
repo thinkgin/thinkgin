@@ -1,59 +1,8 @@
 # 文件系统配置
-filesystem:
-  # 默认磁盘
-  default: "local"
-
-  # 文件系统磁盘配置
-  disks:
-    # 本地存储
-    local:
-      driver: "local"
-      root: "./storage/app"
-      url: "/storage"
-      visibility: "private"
-
-    # 公共存储
-    public:
-      driver: "local"
-      root: "./public"
-      url: "/public"
-      visibility: "public"
-
-    # 云存储 - 阿里云 OSS
-    oss:
-      driver: "oss"
-      access_key: ""
-      secret_key: ""
-      endpoint: ""
-      bucket: ""
-      url: ""
-
-    # 云存储 - 腾讯云 COS
-    cos:
-      driver: "cos"
-      app_id: ""
-      secret_id: ""
-      secret_key: ""
-      region: ""
-      bucket: ""
-      url: ""
-
-    # 云存储 - 七牛云
-    qiniu:
-      driver: "qiniu"
-      access_key: ""
-      secret_key: ""
-      bucket: ""
-      domain: ""
-
-  # 上传配置
-  upload:
-    # 最大文件大小（字节）
-    max_size: 10485760 # 10MB
-    # 允许的文件类型
-    allowed_types:
-      image: ["jpg", "jpeg", "png", "gif", "bmp", "webp"]
-      document: ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"]
-      archive: ["zip", "rar", "7z", "tar", "gz"]
-      video: ["mp4", "avi", "mov", "wmv", "flv"]
-      audio: ["mp3", "wav", "flac", "aac"]
+#
+# NOTE: 本版本**未实现**文件存储抽象层。若业务需要上传文件，推荐直接使用
+# 官方 SDK（aliyun-oss-go-sdk / aws-sdk-go-v2 等），或者用 os.WriteFile +
+# http.FileServer 组合处理本地磁盘。
+#
+# 保留空骨架是为了将来加入 Storage 抽象时配置结构的稳定性。
+filesystem: {}

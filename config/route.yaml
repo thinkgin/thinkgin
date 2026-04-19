@@ -1,26 +1,8 @@
 # 路由配置
-# NOTE: 本文件中的字段目前仅由配置层解析，尚未在 route 包中消费。
-# 保留它们是为了未来实现"URL 缓存、路由前缀映射、多域名路由、参数校验模板"。
-route:
-  # URL 缓存：开启后会把路由匹配结果缓存到指定文件，避免每次遍历
-  url:
-    cache: false
-    cache_file: "runtime/route_cache.json"
-
-  # 路由前缀映射：命名前缀 -> 实际路径。便于批量改版
-  # 例如 prefix.admin = "/manage" 表示所有 admin 组挂到 /manage 下
-  prefix:
-    api: "/api"
-    admin: "/admin"
-
-  # 多域名路由：域名 -> 模块名。用于 SaaS / 多租户场景
-  domain: {}
-
-  # 参数约束：命名参数 -> 正则。例如 :id 只接受数字
-  parameters:
-    patterns:
-      id: "\\d+"
-      slug: "[a-z0-9-]+"
-
-  # 路由分组：按模块拆分的路由名称列表
-  groups: {}
+#
+# NOTE: 本版本路由注册走 route/ 包的普通 Go 代码，本文件的字段**当前均未被消费**。
+# 保留空骨架是为了将来实现以下能力时不必破坏配置结构：
+#   - URL 匹配缓存
+#   - 命名前缀映射 / 多域名路由
+#   - 路径参数正则约束
+route: {}
