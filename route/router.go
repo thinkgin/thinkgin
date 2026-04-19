@@ -96,13 +96,9 @@ func registerStaticAndTemplates(r *gin.Engine) {
 // registerMonitoringRoutes 注册 k8s 探针与 Prometheus 端点。
 // Prometheus 端点需同时满足总开关与模块开关都为 true 才会暴露。
 func registerMonitoringRoutes(r *gin.Engine, cfg *app.GlobalConfig) {
-	r.GET("/livez", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
-	})
-	// /readyz 目前仅返回 ok，未来可串联 DB/Redis 等依赖探活。
-	r.GET("/readyz", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
-	})
+	r.GET("/livez", livezHandler())
+	// /readyz 会探测已注册的 DB/Redis；均为空时也返回 200。
+	r.GET("/readyz", readyzHandler())
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status":  "ok",

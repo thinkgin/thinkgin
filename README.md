@@ -17,7 +17,7 @@
 - **Prometheus 监控** — HTTP 四维 + 运行时 + 业务自定义指标，配置化启停
 - **链路追踪** — OpenTelemetry TracerProvider；GORM 插件把 SQL 纳入同一条 trace
 - **优雅停机** — 信号监听 + 超时 + DB/Cache/Tracer 依序释放，适配 Kubernetes
-- **K8s 探针** — 内置 `/livez`、`/readyz`、`/ping` 端点
+- **K8s 探针** — `/livez` 仅验证进程存活；`/readyz` 真实探测 DB/Redis，依赖降级时返 503
 - **可插拔中间件** — Recovery、RequestID、AccessLog、CORS、RateLimit、Trace、Prometheus、Session
 - **Session 运行时** — `memory` / `redis` 两种 Store，Cookie 安全标志自动透传（HttpOnly/Secure/SameSite）
 - **JWT 鉴权** — HS256 签发/校验，严格拒绝 `alg=none` 伪造；`JWTFromContext` 取 Claims
@@ -338,6 +338,11 @@ readinessProbe:
 
 如果你之前用 ThinkPHP，建议阅读 [`docs/migration-from-thinkphp.md`](docs/migration-from-thinkphp.md)，
 里面列出了最常见的 20+ 对照项（Model、Route、Middleware、Config、View 等）。
+
+## 数据库迁移
+
+框架不内置迁移工具，推荐使用 [`pressly/goose`](https://github.com/pressly/goose)。
+用法与目录约定见 [`docs/database-migration.md`](docs/database-migration.md)。
 
 ## 致谢
 
