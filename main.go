@@ -31,6 +31,13 @@ const banner = `
 `
 
 func main() {
+	// 显式再跑一次 Bootstrap：允许通过 THINKGIN_CONFIG_DIR 指定非默认目录，
+	// 同时让配置加载错误能被 main 感知（包 init 是兜底，错误只打印）。
+	configDir := os.Getenv("THINKGIN_CONFIG_DIR")
+	if err := app.Bootstrap(configDir); err != nil {
+		fmt.Printf("[main] 配置加载存在缺失: %v\n", err)
+	}
+
 	cfg := app.GetConfig()
 	logger := app.GetLogger()
 
