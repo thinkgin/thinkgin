@@ -344,6 +344,16 @@ readinessProbe:
 框架不内置迁移工具，推荐使用 [`pressly/goose`](https://github.com/pressly/goose)。
 用法与目录约定见 [`docs/database-migration.md`](docs/database-migration.md)。
 
+## FAQ / 设计决策
+
+一些反复被问到的问题和背后的取舍，集中写在 [`docs/faq.md`](docs/faq.md)：
+
+- 为什么没有再封装一层"类 ThinkPHP 的 Model 链式调用"？
+- 为什么 Redis 的连接定义放在 `database.yaml`，而不是 `cache.yaml`？
+- 为什么默认配置不预置 MySQL / Redis 连接？
+- 为什么 `view.yaml` / `filesystem.yaml` / `lang.yaml` 里几乎是空的？
+- 为什么 `init()` 里还保留了自动加载配置？
+
 ## 致谢
 
 感谢 [Gin](https://github.com/gin-gonic/gin) 提供高性能的路由引擎。
