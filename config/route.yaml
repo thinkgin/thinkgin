@@ -1,40 +1,26 @@
-# 视图配置
-view:
-  # 模板引擎
-  engine: "html/template" # html/template, pongo2, gin
-
-  # 模板目录
-  paths:
-    - "app/*/view"
-    - "resources/views"
-
-  # 模板文件扩展名
-  extension: ".html"
-
-  # 模板编译配置
-  compile:
-    # 是否缓存编译结果
+# 路由配置
+# NOTE: 本文件中的字段目前仅由配置层解析，尚未在 route 包中消费。
+# 保留它们是为了未来实现"URL 缓存、路由前缀映射、多域名路由、参数校验模板"。
+route:
+  # URL 缓存：开启后会把路由匹配结果缓存到指定文件，避免每次遍历
+  url:
     cache: false
-    # 缓存目录
-    cache_path: "runtime/views"
+    cache_file: "runtime/route_cache.json"
 
-  # 静态资源配置
-  assets:
-    # 静态资源版本号（用于缓存控制）
-    version: "1.0.0"
-    # CSS 文件路径
-    css_path: "/static/css"
-    # JS 文件路径
-    js_path: "/static/js"
-    # 图片文件路径
-    img_path: "/static/images"
+  # 路由前缀映射：命名前缀 -> 实际路径。便于批量改版
+  # 例如 prefix.admin = "/manage" 表示所有 admin 组挂到 /manage 下
+  prefix:
+    api: "/api"
+    admin: "/admin"
 
-  # 全局视图变量
-  globals:
-    app_name: "ThinkGin"
-    app_version: "2.0.1"
+  # 多域名路由：域名 -> 模块名。用于 SaaS / 多租户场景
+  domain: {}
 
-  # 视图助手函数配置
-  helpers:
-    # 是否启用内置助手函数
-    builtin: true
+  # 参数约束：命名参数 -> 正则。例如 :id 只接受数字
+  parameters:
+    patterns:
+      id: "\\d+"
+      slug: "[a-z0-9-]+"
+
+  # 路由分组：按模块拆分的路由名称列表
+  groups: {}

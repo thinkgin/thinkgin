@@ -84,7 +84,8 @@ func registerStaticAndTemplates(r *gin.Engine) {
 	r.Static("/static", "./static")
 	r.Static("/public", "./public")
 	r.Static("/uploads", "./public/uploads")
-	r.LoadHTMLGlob("app/*/view/*")
+	// 仅加载 .html 文件，避免把 .gitkeep、空目录或其他杂项当成模板。
+	r.LoadHTMLGlob("app/*/view/*.html")
 }
 
 // registerMonitoringRoutes 注册 k8s 探针与 Prometheus 端点。

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
@@ -70,12 +71,16 @@ func newRotator() (*rotatelogs.RotateLogs, error) {
 	}
 
 	base := filepath.Join(logPath, Config.Log.File.Filename)
-	return rotatelogs.New(
-		base+".%Y%m%d.log",
-		rotatelogs.WithLinkName(base+".log"),
-		rotatelogs.WithMaxAge(time.Duration(Config.Log.File.MaxAge)*24*time.Hour),
-		rotatelogs.WithRotationTime(time.Duration(Config.Log.File.RotationTime)*time.Hour),
-	)
+	opts := []rotatelogs.Option{
+		rotatelogs.WithMaxAge(time.Duration(Config.Log.File.MaxAge) * 24 * time.Hour),
+		rotatelogs.WithRotationTime(time.Duration(Config.Log.File.RotationTime) * time.Hour),
+	}
+	// Windows 普通用户无 SeCreateSymbolicLinkPrivilege 权限，创建软链会失败。
+	// 在非 Windows 平台才启用 WithLinkName，保持"最新日志"的便捷软链。
+	if runtime.GOOS != "windows" {
+		opts = append(opts, rotatelogs.WithLinkName(base+".log"))
+	}
+	return rotatelogs.New(base+".%Y%m%d.log", opts...)
 }
 
 // allLevelWriterMap 把同一个 writer 绑定到 logrus 全部日志级别，
