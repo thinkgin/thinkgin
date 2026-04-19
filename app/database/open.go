@@ -51,6 +51,12 @@ func openConnection(driver string, conn map[string]interface{}) (*gorm.DB, error
 		return nil, err
 	}
 
+	// 挂载 OTel 追踪插件。失败不阻断连接建立，仅记录到日志由调用方感知。
+	// 未启用 trace 时本插件依旧生效，但 Start 出的 span 走 noop Tracer，零开销。
+	if perr := db.Use(tracingPlugin{}); perr != nil {
+		fmt.Printf("[database] 注册 tracing 插件失败: %v\n", perr)
+	}
+
 	if err := applyPool(db, conn); err != nil {
 		return nil, fmt.Errorf("apply pool: %w", err)
 	}

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"thinkgin/app"
+	"thinkgin/app/cache"
 	"thinkgin/app/database"
 	"thinkgin/extend/middleware"
 	"thinkgin/framework"
@@ -60,6 +61,16 @@ func main() {
 	defer func() {
 		if err := database.CloseAll(); err != nil {
 			logger.Warnf("[database] 关闭连接时发生错误: %v", err)
+		}
+	}()
+
+	// 初始化缓存（Redis）。同样采取"失败不阻塞启动"策略。
+	if err := cache.Init(); err != nil {
+		logger.Warnf("[cache] 部分缓存初始化失败: %v", err)
+	}
+	defer func() {
+		if err := cache.CloseAll(); err != nil {
+			logger.Warnf("[cache] 关闭客户端时发生错误: %v", err)
 		}
 	}()
 

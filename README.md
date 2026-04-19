@@ -10,11 +10,13 @@
 
 ## 特性
 
-- **模块化配置** — 13 个独立 YAML 文件，按职责隔离，支持环境变量覆盖
-- **结构化日志** — Logrus + 文件轮转，JSON/Text 格式可选，按天切割
-- **Prometheus 监控** — HTTP 四维指标 + 系统资源 + 业务自定义指标，配置化启停
-- **链路追踪** — 基于 OpenTelemetry，开箱支持 stdout 导出，可扩展 OTLP/Jaeger
-- **优雅停机** — 信号监听 + 超时控制，适配 Kubernetes 生命周期
+- **模块化配置** — 13 个独立 YAML 文件，按职责隔离；`THINKGIN_*` 前缀环境变量覆盖
+- **多数据源** — GORM 接入 MySQL/PostgreSQL/SQLite（SQLite 纯 Go，无 cgo）
+- **Redis 缓存** — `go-redis/v9` 多实例管理，启动期 Ping 探活
+- **结构化日志** — Logrus + 按天文件轮转，JSON/Text 格式可选
+- **Prometheus 监控** — HTTP 四维 + 运行时 + 业务自定义指标，配置化启停
+- **链路追踪** — OpenTelemetry TracerProvider；GORM 插件把 SQL 纳入同一条 trace
+- **优雅停机** — 信号监听 + 超时 + DB/Cache/Tracer 依序释放，适配 Kubernetes
 - **K8s 探针** — 内置 `/livez`、`/readyz`、`/ping` 端点
 - **可插拔中间件** — Recovery、RequestID、AccessLog、CORS、RateLimit、Trace、Prometheus
 
@@ -22,30 +24,37 @@
 
 ```
 thinkgin/
-├── main.go                  # 入口
-├── framework/
-│   ├── app.go               # App 生命周期管理
-│   └── options.go           # 函数式选项
+├── main.go                       # 入口：Bootstrap → DB/Cache/Tracer → Run
+├── framework/                    # App 生命周期
+│   ├── app.go
+│   ├── options.go
+│   └── browser.go
 ├── app/
-│   ├── config.go            # 配置加载（泛型 YAML 解析）
-│   └── index/               # 示例业务模块 (MVC)
+│   ├── bootstrap.go              # Bootstrap(configDir) 显式入口
+│   ├── loader.go                 # 13 个 YAML 的泛型加载器
+│   ├── env.go                    # THINKGIN_* 环境变量覆盖
+│   ├── defaults.go               # 零值默认填充
+│   ├── validate.go               # 语义校验与纠偏
+│   ├── config.go / types.go      # 全局 Config 单例 + 强类型
+│   ├── logger.go                 # Logrus 初始化 + 跨平台文件轮转
+│   ├── database/                 # GORM 多数据源 + OTel 插件
+│   ├── cache/                    # Redis 多实例管理
+│   └── index/                    # 示例业务模块 (MVC)
 │       ├── controller/
-│       ├── model/
+│       ├── model/                # 含 User 示例
 │       └── view/
-├── config/                  # 配置文件（13 个 YAML）
-├── route/
-│   ├── router.go            # 路由总入口
-│   ├── web.go               # 页面路由
-│   └── api.go               # API 路由（版本化）
-├── extend/middleware/        # 中间件
-│   ├── api_response.go      # 统一响应 + Recovery
-│   ├── logger.go            # RequestID + AccessLog
-│   ├── cors.go              # CORS
-│   ├── ratelimit.go         # IP 令牌桶限流
-│   ├── prometheus.go        # Prometheus 指标
-│   └── trace.go             # OpenTelemetry 链路追踪
-├── public/                  # 静态资源
-└── runtime/                 # 运行时（日志输出）
+├── config/                       # 13 个 YAML
+├── route/                        # 路由按 web / api 拆分
+├── extend/middleware/
+│   ├── api_response.go           # 统一响应 + Recovery
+│   ├── logger.go                 # RequestID + AccessLog
+│   ├── cors.go / ratelimit.go
+│   ├── trace.go                  # OTel TracerProvider 装配
+│   └── prometheus*.go            # 指标按 http/system/business/handler 拆分
+├── .github/workflows/ci.yml      # 三平台矩阵 + race + coverage
+├── .golangci.yml                 # 精挑 linter
+├── public/                       # 静态资源
+└── runtime/                      # 运行时产物（日志）
 ```
 
 ## 快速开始
@@ -153,11 +162,47 @@ if h := middleware.BusinessHistogram("api_duration", []string{"endpoint"}, nil);
 }
 ```
 
-## 测试
+## 数据库与缓存
+
+```go
+import (
+    "thinkgin/app/cache"
+    "thinkgin/app/database"
+)
+
+// 默认连接（对应 database.yaml 的 default 字段）
+db := database.Default()
+
+// 或按名取
+pg, _ := database.Get("pgsql")
+
+// Redis
+rdb := cache.Default()
+```
+
+GORM 插件会自动为每条 SQL 开启 span，并以当前 HTTP 请求的 trace 为父节点——
+前提是业务代码用 `db.WithContext(c.Request.Context())` 传递 context：
+
+```go
+func ListUsers(c *gin.Context) {
+    var users []model.User
+    database.Default().WithContext(c.Request.Context()).Find(&users)
+    c.JSON(200, users)
+}
+```
+
+## 测试 & CI
 
 ```bash
 go test ./...
+# 启用竞态检测（需要 cgo）
+CGO_ENABLED=1 go test -race ./...
 ```
+
+仓库根目录的 `.github/workflows/ci.yml` 会在 push / PR 时跑：
+
+- **Build & Test**：Ubuntu / Windows / macOS 三矩阵，启用 `-race` + coverage
+- **Lint**：`golangci-lint`，规则集见 `.golangci.yml`
 
 ## 部署
 
@@ -206,8 +251,16 @@ readinessProbe:
 | [sirupsen/logrus](https://github.com/sirupsen/logrus) v1.9 | 结构化日志 |
 | [prometheus/client_golang](https://github.com/prometheus/client_golang) v1.20 | 监控指标 |
 | [go.opentelemetry.io/otel](https://opentelemetry.io/) v1.28 | 链路追踪 |
+| [gorm.io/gorm](https://gorm.io/) v1.31 | ORM |
+| [redis/go-redis/v9](https://github.com/redis/go-redis) v9.18 | Redis 客户端 |
+| [glebarez/sqlite](https://github.com/glebarez/sqlite) | SQLite 纯 Go 驱动 |
 | [lestrrat-go/file-rotatelogs](https://github.com/lestrrat-go/file-rotatelogs) | 日志轮转 |
 | [gopkg.in/yaml.v3](https://gopkg.in/yaml.v3) | YAML 解析 |
+
+## 从 ThinkPHP 迁移？
+
+如果你之前用 ThinkPHP，建议阅读 [`docs/migration-from-thinkphp.md`](docs/migration-from-thinkphp.md)，
+里面列出了最常见的 20+ 对照项（Model、Route、Middleware、Config、View 等）。
 
 ## 致谢
 
