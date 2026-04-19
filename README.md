@@ -2,7 +2,7 @@
 
 基于 [Gin](https://github.com/gin-gonic/gin) 的 Go Web 应用框架，提供开箱即用的工程化基础设施。
 
-[![Go](https://img.shields.io/badge/Go-1.23+-00ADD8?style=flat&logo=go)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Gin](https://img.shields.io/badge/Gin-v1.12-blue)](https://github.com/gin-gonic/gin)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -63,7 +63,7 @@ thinkgin/
 
 ### 环境要求
 
-- Go 1.23+
+- Go 1.25+（Gin 1.12 通过 quic-go 间接要求 Go 1.25）
 - Git
 
 ### 安装与运行
@@ -286,7 +286,7 @@ CGO_ENABLED=1 go test -race ./...
 ### Docker
 
 ```dockerfile
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25-alpine AS builder
 WORKDIR /app
 COPY . .
 RUN go mod tidy && go build -o thinkgin
