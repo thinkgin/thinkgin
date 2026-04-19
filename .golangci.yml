@@ -1,0 +1,44 @@
+# golangci-lint 配置。
+# 原则：启用能暴露真实 bug 的 linter，关闭格式/主观偏好类。
+
+run:
+  timeout: 5m
+  go: "1.22"
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck      # 未处理的 error
+    - govet         # 官方静态分析（含 shadow、printf 等）
+    - ineffassign   # 无效赋值
+    - staticcheck   # 强大的 bug 检测
+    - unused        # 死代码
+    - gosimple      # 可简化写法
+    - typecheck     # 类型错误
+    - misspell      # 拼写错误
+    - unconvert     # 不必要的类型转换
+    - bodyclose     # http 响应 body 未关闭
+    - contextcheck  # context 传递检查
+    - rowserrcheck  # sql.Rows.Err 未检查
+
+linters-settings:
+  misspell:
+    locale: US
+  errcheck:
+    # 明确允许忽略返回值的函数：
+    exclude-functions:
+      - fmt.Print
+      - fmt.Printf
+      - fmt.Println
+      - (*github.com/sirupsen/logrus.Logger).Info
+      - (*github.com/sirupsen/logrus.Logger).Warn
+
+issues:
+  exclude-rules:
+    # 测试文件放宽 errcheck，允许快速写测试
+    - path: _test\.go
+      linters: [errcheck]
+
+  # 合理上限，避免淹没关键问题
+  max-issues-per-linter: 50
+  max-same-issues: 10

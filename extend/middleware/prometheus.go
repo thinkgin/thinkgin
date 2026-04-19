@@ -21,8 +21,9 @@ var (
 	httpRequestSize     *prometheus.HistogramVec
 	httpResponseSize    *prometheus.HistogramVec
 
-	// 系统资源指标
-	systemCPUUsage    prometheus.Gauge
+	// 系统资源指标。
+	// CPU 使用率需依赖 gopsutil 等外部库才能准确采集，在引入依赖之前暂不暴露，
+	// 避免 Grafana 展示恒零曲线误导运维判断。
 	systemMemoryUsage prometheus.Gauge
 	processStartTime  prometheus.Gauge
 
@@ -116,15 +117,7 @@ func InitPrometheusMetrics() {
 
 	// 系统资源指标
 	if config.Metrics.System.Enabled {
-		systemCPUUsage = promauto.NewGauge(
-			prometheus.GaugeOpts{
-				Namespace:   config.Namespace,
-				Name:        config.Metrics.System.CPUUsage,
-				Help:        "Current CPU usage percentage",
-				ConstLabels: constLabels,
-			},
-		)
-
+		// CPU 指标未注册，详见文件顶部说明。
 		systemMemoryUsage = promauto.NewGauge(
 			prometheus.GaugeOpts{
 				Namespace:   config.Namespace,
@@ -204,12 +197,15 @@ func PrometheusMiddleware() gin.HandlerFunc {
 	}
 }
 
+// detectScope 根据请求路径归类到粗粒度 scope，作为 Prometheus 标签使用。
+// 注意：必须使用 IsAPIPath 而不是 strings.HasPrefix(p, "/api")，
+// 否则 /apiary 等合法业务路径会被误归为 api scope。
 func detectScope(path string) string {
 	p := strings.ToLower(path)
 	switch {
-	case strings.HasPrefix(p, "/api"):
+	case IsAPIPath(p):
 		return "api"
-	case strings.HasPrefix(p, "/static") || strings.HasPrefix(p, "/public") || strings.HasPrefix(p, "/uploads"):
+	case strings.HasPrefix(p, "/static/"), strings.HasPrefix(p, "/public/"), strings.HasPrefix(p, "/uploads/"):
 		return "static"
 	case p == "/metrics":
 		return "metrics"
@@ -245,9 +241,6 @@ func monitorSystemResources() {
 			if systemMemoryUsage != nil {
 				systemMemoryUsage.Set(float64(m.Alloc))
 			}
-
-			// CPU使用率监控需要更复杂的实现，这里简化处理
-			// 可以使用第三方库如 gopsutil 来获取更准确的CPU使用率
 		}
 	}
 }

@@ -6,46 +6,9 @@ var Config *GlobalConfig
 
 // GetConfig 返回全局配置。如果尚未初始化，返回 nil。
 // 调用方应确保在 main 或 init 阶段完成 Bootstrap 后再使用。
+//
+// 已有的细分 Getter（GetAppConfig / GetServerConfig 等）被移除，
+// 因为项目内 30 处调用全部走 GetConfig() 再取字段，细分 Getter 属于死代码。
 func GetConfig() *GlobalConfig {
 	return Config
-}
-
-// GetAppConfig 返回 app 段快捷引用。
-func GetAppConfig() *AppConfig {
-	if Config == nil {
-		return nil
-	}
-	return &Config.App
-}
-
-// GetServerConfig 返回 server 段快捷引用。
-func GetServerConfig() *ServerConfig {
-	if Config == nil {
-		return nil
-	}
-	return &Config.Server
-}
-
-// GetDatabaseConfig 返回 database 段快捷引用。
-func GetDatabaseConfig() *DatabaseConfig {
-	if Config == nil {
-		return nil
-	}
-	return &Config.Database
-}
-
-// GetLogConfig 返回 log 段快捷引用。
-func GetLogConfig() *LogConfig {
-	if Config == nil {
-		return nil
-	}
-	return &Config.Log
-}
-
-// GetPrometheusConfig 返回 prometheus 段快捷引用。
-func GetPrometheusConfig() *PrometheusConfig {
-	if Config == nil {
-		return nil
-	}
-	return &Config.Prometheus
 }
