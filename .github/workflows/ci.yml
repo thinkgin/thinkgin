@@ -37,12 +37,17 @@ jobs:
           go mod verify
 
       - name: Vet
+        shell: bash
         run: go vet ./...
 
       - name: Build
+        shell: bash
         run: go build -v ./...
 
       - name: Test
+        # 显式 bash：避免 Windows runner 默认的 pwsh 把 -coverprofile=coverage.out
+        # 这类带 `=` 的原生参数错误地拆分成两个参数。
+        shell: bash
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Upload coverage artifact

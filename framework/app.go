@@ -82,6 +82,8 @@ func New(opts ...Option) (*App, error) {
 
 // Run 启动 HTTP 服务并阻塞，直到 ctx 被取消或监听出错。
 // ctx 为 nil 时等价于 context.Background()。
+//
+//nolint:contextcheck // ctx==nil 兜底到 Background 是显式约定的行为，非遗漏继承。
 func (a *App) Run(ctx context.Context) error {
 	if ctx == nil {
 		ctx = context.Background()

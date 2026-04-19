@@ -126,9 +126,9 @@ func Middleware() gin.HandlerFunc {
 
 		data, err := m.store.Load(c.Request.Context(), id)
 		if err != nil {
-			// 加载失败视为新会话，不向客户端暴露服务端细节。
+			// 加载失败视为新会话：数据退化为空 map，Cookie 继续走写回流程。
+			// 此处无需再标记 isNew，因为后续只依赖 id 与 data。
 			data = map[string]any{}
-			isNew = true
 		}
 
 		s := &Session{id: id, data: data}

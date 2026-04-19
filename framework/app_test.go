@@ -48,7 +48,7 @@ func TestNew_AssemblesDependencies(t *testing.T) {
 		t.Errorf("shutdownTimeout = %v, want 3s", a.shutdownTimeout)
 	}
 	if a.server == nil {
-		t.Error("http.Server should be initialised")
+		t.Error("http.Server should be initialized")
 	}
 }
 
