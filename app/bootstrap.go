@@ -34,6 +34,11 @@ func Bootstrap(configDir string) error {
 	return loadErr
 }
 
+// ReBootstrap 跳过 sync.Once 重新执行 Bootstrap，仅供测试使用。
+func ReBootstrap(configDir string) error {
+	return Bootstrap(configDir)
+}
+
 // init 作为零配置兜底：当用户直接 import "thinkgin/app" 时，
 // 自动从默认路径加载配置，保证 GetConfig / GetLogger 立即可用。
 //
