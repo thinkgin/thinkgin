@@ -17,7 +17,6 @@ import (
 	"thinkgin/route"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 )
 
 // defaultShutdownTimeout 优雅停机的默认超时，用于等待 in-flight 请求收尾。
@@ -27,7 +26,7 @@ const defaultShutdownTimeout = 10 * time.Second
 // 字段一律私有，外部仅通过 Option 与方法交互。
 type App struct {
 	config          *app.GlobalConfig
-	logger          *logrus.Logger
+	logger          app.Logger
 	router          *gin.Engine
 	server          *http.Server
 	addr            string

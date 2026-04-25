@@ -6,7 +6,6 @@ import (
 	"thinkgin/app"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 )
 
 // Option 用于向 New 注入配置，遵循 Dave Cheney 的函数式选项模式。
@@ -23,7 +22,7 @@ func WithConfig(cfg *app.GlobalConfig) Option {
 }
 
 // WithLogger 注入自定义 Logger，便于重定向日志输出或适配测试。
-func WithLogger(logger *logrus.Logger) Option {
+func WithLogger(logger app.Logger) Option {
 	return func(a *App) {
 		if logger != nil {
 			a.logger = logger

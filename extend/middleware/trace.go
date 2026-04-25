@@ -15,7 +15,6 @@ import (
 	"thinkgin/app"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -42,7 +41,7 @@ func InitTracer() func(context.Context) error {
 
 	exporter, err := newStdoutExporter()
 	if err != nil {
-		logrus.Warnf("[trace] 初始化导出器失败: %v", err)
+		app.GetLogger().Warnf("[trace] 初始化导出器失败: %v", err)
 		return noopShutdown
 	}
 
@@ -58,7 +57,7 @@ func InitTracer() func(context.Context) error {
 		propagation.Baggage{},
 	))
 
-	logrus.Infof("[trace] 已启用 (driver=%s, sample_rate=%.2f)", cfg.Trace.Driver, cfg.Trace.SampleRate)
+	app.GetLogger().Infof("[trace] 已启用 (driver=%s, sample_rate=%.2f)", cfg.Trace.Driver, cfg.Trace.SampleRate)
 	return tracerProvider.Shutdown
 }
 

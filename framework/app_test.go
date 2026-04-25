@@ -8,7 +8,6 @@ import (
 	"thinkgin/app"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 )
 
 // newTestConfig 构造一个可直接用于测试的最小配置。
@@ -25,7 +24,7 @@ func newTestConfig() *app.GlobalConfig {
 
 func TestNew_AssemblesDependencies(t *testing.T) {
 	cfg := newTestConfig()
-	logger := logrus.New()
+	logger := app.NewLogrusAdapter(nil)
 
 	// 注入独立的 Gin 引擎，避免触发默认路由中的模板加载。
 	a, err := New(
@@ -61,7 +60,7 @@ func TestOptions_Mutators(t *testing.T) {
 		t.Error("WithConfig did not set config")
 	}
 
-	logger := logrus.New()
+	logger := app.NewLogrusAdapter(nil)
 	WithLogger(logger)(a)
 	if a.logger != logger {
 		t.Error("WithLogger did not set logger")
@@ -92,7 +91,7 @@ func TestOptions_Mutators(t *testing.T) {
 func TestShutdown_BeforeRunIsNoop(t *testing.T) {
 	a, err := New(
 		WithConfig(newTestConfig()),
-		WithLogger(logrus.New()),
+		WithLogger(app.NewLogrusAdapter(nil)),
 		WithRouter(gin.New()),
 		WithShutdownTimeout(time.Second),
 	)

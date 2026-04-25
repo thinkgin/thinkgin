@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 )
 
 // 日志记录到文件
@@ -44,7 +43,7 @@ func LoggerToFile() gin.HandlerFunc {
 		userAgent := c.Request.UserAgent()
 
 		// 日志格式
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(map[string]any{
 			"request_id":   c.GetString("request_id"),
 			"status_code":  statusCode,
 			"latency_time": latencyTime,
@@ -89,7 +88,7 @@ func AccessLogger() gin.HandlerFunc {
 			routePath = path
 		}
 
-		fields := logrus.Fields{
+		fields := map[string]any{
 			"request_id":  c.GetString("request_id"),
 			"status_code": statusCode,
 			"latency_ms":  latency.Milliseconds(),
@@ -198,26 +197,21 @@ func newRequestID() string {
 func BusinessLogger(level string, message string, fields map[string]interface{}) {
 	logger := app.GetLogger()
 
-	logFields := logrus.Fields{}
-	for k, v := range fields {
-		logFields[k] = v
-	}
+	l := logger.WithFields(fields)
 
 	switch level {
 	case "debug":
-		logger.WithFields(logFields).Debug(message)
+		l.Debug(message)
 	case "info":
-		logger.WithFields(logFields).Info(message)
+		l.Info(message)
 	case "warn":
-		logger.WithFields(logFields).Warn(message)
+		l.Warn(message)
 	case "error":
-		logger.WithFields(logFields).Error(message)
+		l.Error(message)
 	case "fatal":
-		logger.WithFields(logFields).Fatal(message)
-	case "panic":
-		logger.WithFields(logFields).Panic(message)
+		l.Fatal(message)
 	default:
-		logger.WithFields(logFields).Info(message)
+		l.Info(message)
 	}
 }
 
