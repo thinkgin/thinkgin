@@ -1,0 +1,80 @@
+openapi: "3.0.3"
+info:
+  title: ThinkGin API
+  description: ThinkGin 框架示例 API 文档
+  version: "3.1.0"
+  contact:
+    name: ThinkGin Team
+    url: https://github.com/thinkgin/thinkgin
+
+servers:
+  - url: http://localhost:8000
+    description: 本地开发服务器
+
+paths:
+  /ping:
+    get:
+      summary: 健康检查
+      operationId: ping
+      tags: [System]
+      responses:
+        "200":
+          description: 服务正常
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  message:
+                    type: string
+                    example: pong
+                  version:
+                    type: string
+                    example: "3.1.0"
+
+  /livez:
+    get:
+      summary: Kubernetes 存活探针
+      operationId: livez
+      tags: [System]
+      responses:
+        "200":
+          description: 存活
+
+  /readyz:
+    get:
+      summary: Kubernetes 就绪探针
+      operationId: readyz
+      tags: [System]
+      responses:
+        "200":
+          description: 就绪
+        "503":
+          description: 依赖不健康
+
+  /api/v1/index/hello:
+    get:
+      summary: 示例接口
+      operationId: indexHello
+      tags: [Index]
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: ok
+                  data:
+                    type: object
+                  request_id:
+                    type: string

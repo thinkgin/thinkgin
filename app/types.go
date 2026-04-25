@@ -38,6 +38,7 @@ type AppConfig struct {
 	Monitoring struct {
 		PrometheusEnabled bool `yaml:"prometheus_enabled"`
 	} `yaml:"monitoring"`
+	SwaggerEnabled bool `yaml:"swagger_enabled"`
 }
 
 // ServerConfig 对应 config/server.yaml。

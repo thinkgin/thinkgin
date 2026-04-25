@@ -39,6 +39,7 @@ func InitRouter() *gin.Engine {
 	RegisterWebRoutes(r)
 	RegisterAPIRoutes(r)
 	registerMonitoringRoutes(r, cfg)
+	registerSwaggerRoutes(r, cfg)
 
 	// NoRoute：API 路径返回结构化 JSON，其余返回裸 404，避免 HTML 污染客户端。
 	r.NoRoute(func(c *gin.Context) {
