@@ -15,6 +15,8 @@ import (
 	"encoding/hex"
 	"net/http"
 
+	"thinkgin/app/ctxkeys"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -37,7 +39,7 @@ func CSRF() gin.HandlerFunc {
 		}
 
 		// 将 token 存入 context，模板渲染可用 {{ .csrf_token }}。
-		c.Set("csrf_token", cookieToken)
+		ctxkeys.SetCSRFToken(c, cookieToken)
 
 		// 安全方法不校验 token。
 		method := c.Request.Method

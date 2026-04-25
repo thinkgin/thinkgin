@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"thinkgin/app/ctxkeys"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,7 +15,7 @@ func newCSRFRouter() *gin.Engine {
 	r := gin.New()
 	r.Use(CSRF())
 	r.GET("/form", func(c *gin.Context) {
-		c.String(http.StatusOK, c.GetString("csrf_token"))
+		c.String(http.StatusOK, ctxkeys.GetCSRFToken(c))
 	})
 	r.POST("/submit", func(c *gin.Context) {
 		c.String(http.StatusOK, "ok")

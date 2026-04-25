@@ -164,7 +164,7 @@ type Logger interface {
 
 ---
 
-### 12. 脚手架功能单薄
+### 12. ✅ 脚手架功能单薄（v3.2.0 已扩展 middleware/migration 子命令）
 
 **现状**：仅 `new module <name>`，生成 controller + model + view。
 
@@ -194,7 +194,7 @@ type Logger interface {
 
 ---
 
-### 15. Context 值管理不规范
+### 15. ✅ Context 值管理不规范（v3.2.0 已引入 ctxkeys 包）
 
 **现状**：用字符串 key（`"request_id"`、`"thinkgin:jwt_claims"`）存取 gin.Context 值。
 

@@ -98,8 +98,18 @@ func TestJWTParse_ExpiredReturnsError(t *testing.T) {
 func TestJWTParse_TamperedSignatureRejected(t *testing.T) {
 	resetJWTConfig(t, "test-secret", 3600)
 	token, _ := JWTIssue("u1", nil, 0)
-	// 改最后一位，破坏签名
-	tampered := token[:len(token)-1] + oppositeChar(token[len(token)-1])
+	// 翻转签名部分多个字符，确保签名一定失效
+	parts := strings.SplitN(token, ".", 3)
+	sig := parts[2]
+	flipped := make([]byte, len(sig))
+	for i, b := range []byte(sig) {
+		if b == 'A' {
+			flipped[i] = 'B'
+		} else {
+			flipped[i] = 'A'
+		}
+	}
+	tampered := parts[0] + "." + parts[1] + "." + string(flipped)
 	if _, err := JWTParse(tampered); err == nil {
 		t.Fatal("expected signature error")
 	}

@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"thinkgin/app/ctxkeys"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -39,7 +41,7 @@ func TestIsAPIPath(t *testing.T) {
 func TestAPISuccess(t *testing.T) {
 	r := gin.New()
 	r.GET("/test", func(c *gin.Context) {
-		c.Set("request_id", "test-123")
+		ctxkeys.SetRequestID(c, "test-123")
 		APISuccess(c, map[string]string{"hello": "world"})
 	})
 
@@ -69,7 +71,7 @@ func TestAPISuccess(t *testing.T) {
 func TestAPIError(t *testing.T) {
 	r := gin.New()
 	r.GET("/test", func(c *gin.Context) {
-		c.Set("request_id", "err-456")
+		ctxkeys.SetRequestID(c, "err-456")
 		APIError(c, http.StatusNotFound, 404, "not found")
 	})
 
@@ -97,7 +99,7 @@ func TestRequestIDMiddleware(t *testing.T) {
 	r := gin.New()
 	r.Use(RequestID())
 	r.GET("/test", func(c *gin.Context) {
-		id := c.GetString("request_id")
+		id := ctxkeys.GetRequestID(c)
 		c.String(200, id)
 	})
 

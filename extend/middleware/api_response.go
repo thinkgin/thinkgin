@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"thinkgin/app"
+	"thinkgin/app/ctxkeys"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +19,7 @@ func APISuccess(c *gin.Context, data interface{}) {
 		"code":       http.StatusOK,
 		"message":    "ok",
 		"data":       data,
-		"request_id": c.GetString("request_id"),
+		"request_id": ctxkeys.GetRequestID(c),
 	})
 	c.Abort()
 }
@@ -29,7 +30,7 @@ func APIError(c *gin.Context, httpStatus int, code int, message string) {
 	c.JSON(httpStatus, gin.H{
 		"code":       code,
 		"message":    message,
-		"request_id": c.GetString("request_id"),
+		"request_id": ctxkeys.GetRequestID(c),
 	})
 	c.Abort()
 }

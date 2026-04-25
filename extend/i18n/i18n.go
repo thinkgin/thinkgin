@@ -26,7 +26,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const ginContextKey = "thinkgin:i18n:locale"
+const (
+	ginContextKey    = "thinkgin:i18n:locale"
+	ginBundleCtxKey  = "thinkgin:i18n:bundle"
+)
 
 // Bundle 存放所有语言的翻译映射。
 type Bundle struct {
@@ -122,7 +125,7 @@ func Middleware(bundle *Bundle) gin.HandlerFunc {
 			locale = bundle.fallback
 		}
 		c.Set(ginContextKey, locale)
-		c.Set("i18n_bundle", bundle)
+		c.Set(ginBundleCtxKey, bundle)
 		c.Next()
 	}
 }
@@ -133,7 +136,7 @@ func T(c *gin.Context, key string, params ...map[string]string) string {
 	locale, _ := c.Get(ginContextKey)
 	l, _ := locale.(string)
 
-	bundleVal, _ := c.Get("i18n_bundle")
+	bundleVal, _ := c.Get(ginBundleCtxKey)
 	bundle, _ := bundleVal.(*Bundle)
 	if bundle == nil {
 		return key

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"strings"
 	"thinkgin/app"
+	"thinkgin/app/ctxkeys"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -44,7 +45,7 @@ func LoggerToFile() gin.HandlerFunc {
 
 		// 日志格式
 		logger.WithFields(map[string]any{
-			"request_id":   c.GetString("request_id"),
+			"request_id":   ctxkeys.GetRequestID(c),
 			"status_code":  statusCode,
 			"latency_time": latencyTime,
 			"client_ip":    clientIP,
@@ -61,7 +62,7 @@ func RequestID() gin.HandlerFunc {
 		if strings.TrimSpace(rid) == "" {
 			rid = newRequestID()
 		}
-		c.Set("request_id", rid)
+		ctxkeys.SetRequestID(c, rid)
 		c.Header("X-Request-ID", rid)
 		c.Next()
 	}
@@ -89,7 +90,7 @@ func AccessLogger() gin.HandlerFunc {
 		}
 
 		fields := map[string]any{
-			"request_id":  c.GetString("request_id"),
+			"request_id":  ctxkeys.GetRequestID(c),
 			"status_code": statusCode,
 			"latency_ms":  latency.Milliseconds(),
 			"client_ip":   c.ClientIP(),

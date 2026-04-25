@@ -101,6 +101,70 @@ func TestNewModule_ControllerContainsValidGo(t *testing.T) {
 	}
 }
 
+func TestNewMiddleware_CreatesFile(t *testing.T) {
+	chdir(t)
+	if err := newMiddleware("auth_log"); err != nil {
+		t.Fatalf("newMiddleware() error: %v", err)
+	}
+	path := filepath.Join("extend", "middleware", "auth_log.go")
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("expected %s to exist: %v", path, err)
+	}
+	content := string(got)
+	for _, must := range []string{
+		"package middleware",
+		"func Auth_log() gin.HandlerFunc",
+		"c.Next()",
+	} {
+		if !strings.Contains(content, must) {
+			t.Errorf("middleware file missing %q, got:\n%s", must, content)
+		}
+	}
+}
+
+func TestNewMiddleware_RefusesToOverwrite(t *testing.T) {
+	chdir(t)
+	dir := filepath.Join("extend", "middleware")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "existing.go")
+	if err := os.WriteFile(path, []byte("// keep"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := newMiddleware("existing"); err == nil {
+		t.Fatal("expected error when middleware file already exists")
+	}
+}
+
+func TestNewMigration_CreatesFile(t *testing.T) {
+	chdir(t)
+	if err := newMigration("create_users"); err != nil {
+		t.Fatalf("newMigration() error: %v", err)
+	}
+	dir := filepath.Join("app", "database", "migrations")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("expected migrations dir: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("expected 1 migration file, got %d", len(entries))
+	}
+	got, _ := os.ReadFile(filepath.Join(dir, entries[0].Name()))
+	content := string(got)
+	for _, must := range []string{
+		"package migrations",
+		"create_users",
+		"func Migration_",
+		"database.Migration",
+	} {
+		if !strings.Contains(content, must) {
+			t.Errorf("migration file missing %q, got:\n%s", must, content)
+		}
+	}
+}
+
 func TestRun_UnknownCommandReturnsError(t *testing.T) {
 	if err := run([]string{"banana"}); err == nil {
 		t.Error("expected error for unknown command")
