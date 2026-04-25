@@ -45,7 +45,7 @@ func WatchConfig(configDir string, callbacks ...ConfigReloadCallback) (*ConfigWa
 	}
 
 	if err := w.Add(configDir); err != nil {
-		w.Close()
+		_ = w.Close()
 		return nil, fmt.Errorf("hot_reload: watch %s: %w", configDir, err)
 	}
 

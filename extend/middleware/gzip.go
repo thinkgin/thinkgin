@@ -14,10 +14,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const (
-	// gzipMinSize 小于此字节数的响应不压缩，避免小包膨胀。
-	gzipMinSize = 1024
-)
+// gzipMinSize 小于此字节数的响应不压缩，避免小包膨胀。
+// 目前暂未启用阈值判断，预留给后续版本。
+// const gzipMinSize = 1024
 
 var gzipPool = sync.Pool{
 	New: func() any {
@@ -59,7 +58,7 @@ func Gzip() gin.HandlerFunc {
 
 		c.Writer = &gzipWriter{ResponseWriter: c.Writer, gz: gz}
 		defer func() {
-			gz.Close()
+			_ = gz.Close()
 		}()
 
 		c.Next()
@@ -83,7 +82,7 @@ func GzipDecompressRequest() gin.HandlerFunc {
 			})
 			return
 		}
-		defer reader.Close()
+		defer func() { _ = reader.Close() }()
 
 		c.Request.Body = io.NopCloser(reader)
 		c.Request.Header.Del("Content-Encoding")
