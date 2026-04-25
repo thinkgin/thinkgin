@@ -100,6 +100,8 @@ func applyMiddleware(r *gin.Engine, name string) {
 		r.Use(middleware.CircuitBreaker())
 	case "timeout":
 		r.Use(middleware.Timeout())
+	case "body_limit":
+		r.Use(middleware.BodyLimit())
 	}
 }
 
