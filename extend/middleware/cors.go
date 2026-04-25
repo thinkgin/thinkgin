@@ -21,7 +21,8 @@ type corsConfig struct {
 
 func CORS() gin.HandlerFunc {
 	cfg := getCORSConfig()
-	allowOrigins := strings.Join(cfg.AllowOrigins, ", ")
+
+	// 预计算不变的头值，避免每次请求重复拼接。
 	allowMethods := strings.Join(cfg.AllowMethods, ", ")
 	allowHeaders := strings.Join(cfg.AllowHeaders, ", ")
 	exposeHeaders := strings.Join(cfg.ExposeHeaders, ", ")
@@ -30,12 +31,37 @@ func CORS() gin.HandlerFunc {
 		maxAge = strconv.Itoa(cfg.MaxAge)
 	}
 
+	// 构建 origin 白名单 set，O(1) 查找。
+	allowAll := len(cfg.AllowOrigins) == 1 && cfg.AllowOrigins[0] == "*"
+	originSet := make(map[string]struct{}, len(cfg.AllowOrigins))
+	for _, o := range cfg.AllowOrigins {
+		originSet[strings.TrimSpace(o)] = struct{}{}
+	}
+
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")
-		if origin != "" {
-			c.Header("Access-Control-Allow-Origin", allowOrigins)
-			c.Header("Vary", "Origin")
+		if origin == "" {
+			c.Next()
+			return
 		}
+
+		// Access-Control-Allow-Origin 标准只接受单个 origin 或 "*"。
+		// 多 origin 场景必须逐请求匹配后动态回写该 origin。
+		if allowAll {
+			c.Header("Access-Control-Allow-Origin", "*")
+		} else if _, ok := originSet[origin]; ok {
+			c.Header("Access-Control-Allow-Origin", origin)
+			c.Header("Vary", "Origin")
+		} else {
+			// Origin 不在白名单：不写 Allow-Origin，浏览器会拦截。
+			if c.Request.Method == http.MethodOptions {
+				c.AbortWithStatus(http.StatusNoContent)
+			} else {
+				c.Next()
+			}
+			return
+		}
+
 		if allowMethods != "" {
 			c.Header("Access-Control-Allow-Methods", allowMethods)
 		}

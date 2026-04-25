@@ -6,6 +6,9 @@
 //
 // 多实例部署时，令牌桶在各实例独立计数，整体配额会被放大 N 倍。
 // 如需全局限流，请改造为 Redis + Lua 或接入专门的限流网关。
+//
+// 内存保护：后台 goroutine 每 bucketGCInterval 清理一次超过 bucketTTL
+// 未被访问的桶，避免海量 IP 导致内存无限膨胀。
 package middleware
 
 import (
@@ -16,6 +19,13 @@ import (
 	"thinkgin/app"
 
 	"github.com/gin-gonic/gin"
+)
+
+const (
+	// bucketTTL 超过此时间未被访问的桶将被回收。
+	bucketTTL = 10 * time.Minute
+	// bucketGCInterval 后台清理周期。
+	bucketGCInterval = 1 * time.Minute
 )
 
 // tokenBucket 单 IP 的令牌桶状态。
@@ -48,6 +58,17 @@ type limiterStore struct {
 	cfg     rateLimitConfig
 }
 
+// evictStale 删除所有超过 bucketTTL 未被访问的桶。
+func (s *limiterStore) evictStale(now time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for ip, b := range s.buckets {
+		if now.Sub(b.last) > bucketTTL {
+			delete(s.buckets, ip)
+		}
+	}
+}
+
 type rateLimitConfig struct {
 	RequestsPerMinute int
 }
@@ -62,6 +83,15 @@ func RateLimit() gin.HandlerFunc {
 		buckets: make(map[string]*tokenBucket),
 		cfg:     cfg,
 	}
+
+	// 后台 goroutine 定期清理不活跃的 IP 桶，防止内存泄漏。
+	go func() {
+		ticker := time.NewTicker(bucketGCInterval)
+		defer ticker.Stop()
+		for t := range ticker.C {
+			store.evictStale(t)
+		}
+	}()
 
 	return func(c *gin.Context) {
 		ip := c.ClientIP()

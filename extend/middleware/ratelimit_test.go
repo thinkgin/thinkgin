@@ -96,6 +96,24 @@ func TestRateLimit_PerIPIndependence(t *testing.T) {
 	}
 }
 
+func TestEvictStale_RemovesExpiredBuckets(t *testing.T) {
+	now := time.Now()
+	store := &limiterStore{
+		buckets: map[string]*tokenBucket{
+			"10.0.0.1": {capacity: 60, tokens: 60, rate: 1, last: now.Add(-15 * time.Minute)}, // 过期
+			"10.0.0.2": {capacity: 60, tokens: 60, rate: 1, last: now.Add(-1 * time.Minute)},  // 活跃
+		},
+	}
+	store.evictStale(now)
+
+	if _, ok := store.buckets["10.0.0.1"]; ok {
+		t.Error("stale bucket 10.0.0.1 should have been evicted")
+	}
+	if _, ok := store.buckets["10.0.0.2"]; !ok {
+		t.Error("active bucket 10.0.0.2 should be retained")
+	}
+}
+
 func TestTokenBucket_RefillOverTime(t *testing.T) {
 	// 白盒测令牌桶刷新：initial=0 token / rate=60/s，1 秒后应回到满桶。
 	b := &tokenBucket{

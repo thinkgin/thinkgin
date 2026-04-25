@@ -19,7 +19,8 @@ func newCORSRouter() *gin.Engine {
 	return r
 }
 
-func TestCORS_AppliesAllHeadersFromConfig(t *testing.T) {
+func TestCORS_MatchedOriginReturnsExactOrigin(t *testing.T) {
+	// 多 origin 白名单：请求的 Origin 在白名单中，应回写该单一 origin（非逗号拼接）。
 	app.Config = &app.GlobalConfig{}
 	app.Config.Middleware.Config = map[string]interface{}{
 		"cors": map[string]interface{}{
@@ -40,7 +41,7 @@ func TestCORS_AppliesAllHeadersFromConfig(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	want := map[string]string{
-		"Access-Control-Allow-Origin":      "https://a.com, https://b.com",
+		"Access-Control-Allow-Origin":      "https://a.com",
 		"Access-Control-Allow-Methods":     "GET, POST",
 		"Access-Control-Allow-Headers":     "X-Test",
 		"Access-Control-Expose-Headers":    "X-Total-Count",
@@ -52,6 +53,49 @@ func TestCORS_AppliesAllHeadersFromConfig(t *testing.T) {
 		if got := w.Header().Get(k); got != v {
 			t.Errorf("%s = %q, want %q", k, got, v)
 		}
+	}
+}
+
+func TestCORS_SecondOriginAlsoMatches(t *testing.T) {
+	// 确保白名单中的第二个 origin 也能正确匹配。
+	app.Config = &app.GlobalConfig{}
+	app.Config.Middleware.Config = map[string]interface{}{
+		"cors": map[string]interface{}{
+			"allow_origins": []interface{}{"https://a.com", "https://b.com"},
+		},
+	}
+	r := newCORSRouter()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/ok", nil)
+	req.Header.Set("Origin", "https://b.com")
+	r.ServeHTTP(w, req)
+
+	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "https://b.com" {
+		t.Errorf("Allow-Origin = %q, want https://b.com", got)
+	}
+}
+
+func TestCORS_UnmatchedOriginOmitsHeaders(t *testing.T) {
+	// Origin 不在白名单时，不应写 Allow-Origin 头。
+	app.Config = &app.GlobalConfig{}
+	app.Config.Middleware.Config = map[string]interface{}{
+		"cors": map[string]interface{}{
+			"allow_origins": []interface{}{"https://a.com"},
+		},
+	}
+	r := newCORSRouter()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/ok", nil)
+	req.Header.Set("Origin", "https://evil.com")
+	r.ServeHTTP(w, req)
+
+	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "" {
+		t.Errorf("Allow-Origin = %q, want empty for unmatched origin", got)
+	}
+	if w.Code != http.StatusOK {
+		t.Errorf("status=%d, want 200 (request should still be served)", w.Code)
 	}
 }
 
