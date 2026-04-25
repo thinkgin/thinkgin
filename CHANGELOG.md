@@ -50,6 +50,11 @@
   - `Accept-Language` + `?lang=` 查询参数自动语言检测
   - `{{.Key}}` 模板变量替换
   - Gin 中间件 + `T(c, key)` 便捷函数
+- **WebSocket 支持**（`extend/websocket/`）
+  - 基于 gorilla/websocket 封装，`Handler()` 一行升级 HTTP → WS
+  - `Conn` 包装线程安全写（`WriteJSON` / `WriteSafeMessage`）
+  - `Hub` 广播模型：Register / Unregister / Broadcast / BroadcastJSON
+  - 支持自定义 Upgrader（如严格 Origin 检查）
 - **Makefile** — 统一 `build` / `test` / `lint` / `fmt` / `scaffold` 等命令
 
 ### Changed

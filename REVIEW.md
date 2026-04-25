@@ -186,7 +186,7 @@ type Logger interface {
 
 ---
 
-### 14. 缺少 WebSocket 支持
+### 14. ✅ 缺少 WebSocket 支持（v3.2.0 已完成）
 
 **对标**：Fiber 内置 WebSocket；Iris 有 WebSocket 子包；Gin 社区用 `gorilla/websocket`。
 
