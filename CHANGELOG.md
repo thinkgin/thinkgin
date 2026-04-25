@@ -2,6 +2,53 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.3.4] - 2026-04-25
+
+### Changed
+
+- middleware 测试覆盖率从 43% 提升到 **62%**
+- route 测试覆盖率从 17% 提升到 **37%**
+- 新增 Recovery/APIErrorHandler/Gzip 解压/CORS helper/Logger 内部函数的测试
+- 新增 route 包 applyMiddleware/registerGlobalMiddleware/registerMonitoringRoutes 测试
+- .gitignore 排除覆盖率产物
+
+---
+
+## [3.3.3] - 2026-04-25
+
+### Added
+
+- **请求体大小限制中间件**（`extend/middleware/bodylimit.go`）
+  - Content-Length 预检 + `MaxBytesReader` 双重保护
+  - 默认 10MB，支持 `BodyLimitWithSize(bytes)` 自定义
+  - `ParseBodyLimit("10MB")` 字符串解析（B/KB/MB/GB）
+  - `BodyLimitFromString("1GB")` 便捷工厂函数
+
+---
+
+## [3.3.2] - 2026-04-25
+
+### Added
+
+- **请求超时控制中间件**（`extend/middleware/timeout.go`）
+  - `context.WithTimeout` 传播超时信号到下游 handler
+  - 超时返回 504 Gateway Timeout
+  - 默认 30s，支持 `TimeoutWithDuration` 自定义
+
+---
+
+## [3.3.1] - 2026-04-25
+
+### Added
+
+- **熔断器中间件**（`extend/middleware/circuitbreaker.go`）
+  - 三态状态机：Closed → Open → HalfOpen → Closed
+  - 滑动窗口错误率统计
+  - 可配置窗口大小 / 错误阈值 / 冷却时间 / 试探请求数
+  - `CircuitBreaker()` 默认配置 + `CircuitBreakerWithConfig()` 自定义
+
+---
+
 ## [3.3.0] - 2026-04-25
 
 本版本聚焦**开发体验与代码质量**：WebSocket 实时通信、Context 值类型安全、脚手架子命令扩展。
