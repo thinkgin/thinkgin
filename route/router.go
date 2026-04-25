@@ -87,6 +87,12 @@ func applyMiddleware(r *gin.Engine, name string) {
 	case "prometheus":
 		middleware.InitPrometheusMetrics()
 		r.Use(middleware.PrometheusMiddleware())
+	case "secure_headers":
+		r.Use(middleware.SecureHeaders())
+	case "gzip":
+		r.Use(middleware.Gzip())
+	case "csrf":
+		r.Use(middleware.CSRF())
 	}
 }
 
