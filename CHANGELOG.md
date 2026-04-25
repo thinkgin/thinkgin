@@ -2,6 +2,45 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.3.0] - 2026-04-25
+
+本版本聚焦**开发体验与代码质量**：WebSocket 实时通信、Context 值类型安全、脚手架子命令扩展。
+
+### Added
+
+- **WebSocket 支持**（`extend/websocket/`）
+  - 基于 gorilla/websocket 封装，`Handler()` 一行升级 HTTP → WS
+  - `Conn` 包装线程安全写（`WriteJSON` / `WriteSafeMessage`）
+  - `Hub` 广播模型：Register / Unregister / Broadcast / BroadcastJSON
+  - 支持自定义 Upgrader（如严格 Origin 检查）
+- **Context Key 类型安全**（`app/ctxkeys/`）
+  - 统一 `thinkgin:` 命名空间常量，消除裸字符串 key
+  - 提供 `GetRequestID` / `SetRequestID` / `GetCSRFToken` / `SetCSRFToken` 类型安全函数
+- **脚手架扩展**（`cmd/scaffold`）
+  - `new middleware <name>` — 生成中间件骨架到 `extend/middleware/`
+  - `new migration <name>` — 生成带时间戳的迁移文件到 `app/database/migrations/`
+
+### Fixed
+
+- JWT tampered signature 测试不稳定（翻转整段签名替代单字符翻转）
+- golangci-lint 报错：`gzipMinSize` 未使用、`Close()` 返回值未检查
+
+### Internal
+
+- 所有中间件 / API 响应中的裸字符串 context key 迁移为 `ctxkeys` 包
+- i18n 内部 key 统一为 `thinkgin:i18n:bundle` 常量
+- REVIEW.md 15/15 项全部标注 ✅ 完成
+
+### Migration Notes
+
+从 v3.2.0 升级到 v3.3.0：
+
+1. `c.GetString("request_id")` 建议改为 `ctxkeys.GetRequestID(c)`，旧写法仍可用但 key 已变为 `thinkgin:request_id`。
+2. `c.GetString("csrf_token")` 建议改为 `ctxkeys.GetCSRFToken(c)`，key 已变为 `thinkgin:csrf_token`。
+3. 新增 `gorilla/websocket` 依赖，运行 `go mod tidy` 更新。
+
+---
+
 ## [3.2.0] - 2026-04-25
 
 本版本聚焦**架构解耦、安全加固、运维能力扩展**：Logger 接口化、CORS 安全修复、HTTPS 双监听、ServiceContext 依赖注入、六大新中间件、数据库迁移系统、配置热更新、分布式限流与 i18n 运行时。

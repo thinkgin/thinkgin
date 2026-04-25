@@ -19,7 +19,7 @@ func TestSetDefaultConfig(t *testing.T) {
 		want interface{}
 	}{
 		{"App.Name", Config.App.Name, "ThinkGin"},
-		{"App.Version", Config.App.Version, "3.2.0"},
+		{"App.Version", Config.App.Version, "3.3.0"},
 		{"Server.HTTP.Host", Config.Server.HTTP.Host, "0.0.0.0"},
 		{"Server.HTTP.Port", Config.Server.HTTP.Port, 8000},
 		{"Server.HTTP.ReadTimeout", Config.Server.HTTP.ReadTimeout, 60},

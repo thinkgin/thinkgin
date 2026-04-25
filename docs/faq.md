@@ -125,7 +125,7 @@ session，只是把"database 欠缺清晰度"换成"cache / session 各自欠缺
 
 ### 为什么
 
-**零依赖启动**是 3.2.0 的一个显性目标：
+**零依赖启动**是 3.3.0 的一个显性目标：
 
 ```bash
 git clone ... && cd thinkgin && go run main.go
@@ -159,7 +159,7 @@ git clone ... && cd thinkgin && go run main.go
 filesystem 抽象层完全没实现。保留这些字段反而让用户误以为"改了就会生效"，
 是典型的**纸面配置陷阱**。
 
-3.2.0 做的事就是**把未消费字段全部删掉**，只保留空骨架 + 注释说明替代方案：
+3.3.0 做的事就是**把未消费字段全部删掉**，只保留空骨架 + 注释说明替代方案：
 
 - 模板：继续走 `html/template` + `app/*/view/*.html` 硬约定
 - 文件存储：推荐直接用官方 SDK（aliyun-oss-go-sdk / aws-sdk-go-v2 等）
