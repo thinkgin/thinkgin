@@ -8,6 +8,7 @@ package framework
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
@@ -29,7 +30,9 @@ type App struct {
 	logger          app.Logger
 	router          *gin.Engine
 	server          *http.Server
+	tlsServer       *http.Server // HTTPS server，仅在 config.server.https.enabled=true 时非 nil
 	addr            string
+	tlsAddr         string
 	openBrowser     bool
 	shutdownTimeout time.Duration
 }
@@ -76,6 +79,24 @@ func New(opts ...Option) (*App, error) {
 		MaxHeaderBytes: a.config.Server.HTTP.MaxHeaderBytes,
 	}
 
+	// 若启用 HTTPS，构造 TLS server；证书文件不存在时 Run 阶段才会报错。
+	if a.config.Server.HTTPS.Enabled {
+		port := a.config.Server.HTTPS.Port
+		if port == 0 {
+			port = 443
+		}
+		a.tlsAddr = fmt.Sprintf("%s:%d", a.config.Server.HTTP.Host, port)
+		a.tlsServer = &http.Server{
+			Addr:           a.tlsAddr,
+			Handler:        a.router,
+			ReadTimeout:    time.Duration(a.config.Server.HTTP.ReadTimeout) * time.Second,
+			WriteTimeout:   time.Duration(a.config.Server.HTTP.WriteTimeout) * time.Second,
+			IdleTimeout:    time.Duration(a.config.Server.HTTP.IdleTimeout) * time.Second,
+			MaxHeaderBytes: a.config.Server.HTTP.MaxHeaderBytes,
+			TLSConfig:      &tls.Config{MinVersion: tls.VersionTLS12},
+		}
+	}
+
 	return a, nil
 }
 
@@ -91,10 +112,20 @@ func (a *App) Run(ctx context.Context) error {
 	a.logger.Infof("server listening on http://%s", a.addr)
 	a.logger.Infof("mode=%s, app=%s v%s", a.config.Server.Mode, a.config.App.Name, a.config.App.Version)
 
-	errCh := make(chan error, 1)
+	errCh := make(chan error, 2)
 	go func() {
 		errCh <- a.server.ListenAndServe()
 	}()
+
+	// 若启用了 HTTPS，并发启动 TLS 监听。
+	if a.tlsServer != nil {
+		cert := a.config.Server.HTTPS.CertFile
+		key := a.config.Server.HTTPS.KeyFile
+		a.logger.Infof("server listening on https://%s", a.tlsAddr)
+		go func() {
+			errCh <- a.tlsServer.ListenAndServeTLS(cert, key)
+		}()
+	}
 
 	// 延迟异步打开浏览器，等待监听端口就绪；失败静默忽略。
 	if a.openBrowser && a.config.App.Debug {
@@ -120,8 +151,16 @@ func (a *App) Run(ctx context.Context) error {
 // Shutdown 触发 HTTP Server 的优雅停机。
 // 在 Server 未初始化时返回 nil。
 func (a *App) Shutdown(ctx context.Context) error {
-	if a.server == nil {
-		return nil
+	var errs []error
+	if a.server != nil {
+		if err := a.server.Shutdown(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("http shutdown: %w", err))
+		}
 	}
-	return a.server.Shutdown(ctx)
+	if a.tlsServer != nil {
+		if err := a.tlsServer.Shutdown(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("https shutdown: %w", err))
+		}
+	}
+	return errors.Join(errs...)
 }
