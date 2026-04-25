@@ -98,6 +98,8 @@ func applyMiddleware(r *gin.Engine, name string) {
 		r.Use(middleware.RedisRateLimit())
 	case "circuit_breaker":
 		r.Use(middleware.CircuitBreaker())
+	case "timeout":
+		r.Use(middleware.Timeout())
 	}
 }
 

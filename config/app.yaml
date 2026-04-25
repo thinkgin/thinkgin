@@ -1,7 +1,7 @@
 # 应用配置
 app:
   name: "ThinkGin"
-  version: "3.3.1"
+  version: "3.3.2"
   debug: true
   timezone: "Asia/Shanghai"
   locale: "zh-CN"
