@@ -18,7 +18,7 @@
 
 ## 二、核心提升项（按优先级排序）
 
-### 1. 全局单例过多，缺少依赖注入
+### 1. ✅ 全局单例过多，缺少依赖注入（v3.2.0 已完成）
 
 **现状**：`app.Config`、`app.Logger`、`database.Default()`、`cache.Default()` 全是包级全局变量。
 
@@ -33,7 +33,7 @@
 
 ---
 
-### 2. Logger 接口缺失，硬绑定 logrus
+### 2. ✅ Logger 接口缺失，硬绑定 logrus（v3.2.0 已完成）
 
 **现状**：`app.Logger` 类型为 `*logrus.Logger`，所有中间件直接依赖 logrus。
 
@@ -60,7 +60,7 @@ type Logger interface {
 
 ---
 
-### 3. CORS 实现有安全隐患
+### 3. ✅ CORS 实现有安全隐患（v3.2.0 已修复）
 
 **现状**：`cors.go` 把 `AllowOrigins` 用逗号拼接后设为 `Access-Control-Allow-Origin` 响应头。
 
@@ -72,7 +72,7 @@ type Logger interface {
 
 ---
 
-### 4. 缺少接口文档自动生成（Swagger/OpenAPI）
+### 4. ✅ 缺少接口文档自动生成（Swagger/OpenAPI）（v3.2.0 已完成）
 
 **现状**：无任何 API 文档能力。
 
@@ -82,7 +82,7 @@ type Logger interface {
 
 ---
 
-### 5. 数据库层缺少迁移机制
+### 5. ✅ 数据库层缺少迁移机制（v3.2.0 已完成）
 
 **现状**：有 GORM 连接管理，但无 migration 系统。
 
@@ -92,7 +92,7 @@ type Logger interface {
 
 ---
 
-### 6. 缺少 HTTP/HTTPS 双监听
+### 6. ✅ 缺少 HTTP/HTTPS 双监听（v3.2.0 已完成）
 
 **现状**：`ServerConfig.HTTPS` 有配置结构体，但 `framework.App` 只启动 HTTP 监听。
 
@@ -100,7 +100,7 @@ type Logger interface {
 
 ---
 
-### 7. Rate Limiter 无分布式能力 & 内存泄漏风险
+### 7. ✅ Rate Limiter 无分布式能力 & 内存泄漏风险（v3.2.0 已完成）
 
 **现状**：进程内令牌桶，`buckets map[string]*tokenBucket` 只增不删。
 
@@ -116,7 +116,7 @@ type Logger interface {
 
 ---
 
-### 8. 缺少常用中间件
+### 8. ✅ 缺少常用中间件（v3.2.0 已补充 CSRF/Gzip/安全头）
 
 | 中间件 | ThinkGin | Kratos | Go-Zero | GoFrame |
 |--------|----------|--------|---------|---------|
@@ -129,7 +129,7 @@ type Logger interface {
 
 ---
 
-### 9. 配置系统缺少热更新 & 远程配置
+### 9. ✅ 配置系统缺少热更新（v3.2.0 已完成 fsnotify watch）
 
 **现状**：启动时一次性从 YAML 加载，运行期不可变。
 
@@ -139,7 +139,7 @@ type Logger interface {
 
 ---
 
-### 10. 测试覆盖不足
+### 10. ✅ 测试覆盖不足（v3.2.0 已大幅补充）
 
 **现状**：
 - 有测试的文件：`app_test.go`、`cors_test.go`、`jwt_test.go`、`middleware_test.go`、`ratelimit_test.go`、`health_test.go`、`config_test.go`、`scaffold/main_test.go`
@@ -154,7 +154,7 @@ type Logger interface {
 
 ---
 
-### 11. 缺少 Makefile / Taskfile
+### 11. ✅ 缺少 Makefile / Taskfile（v3.2.0 已完成）
 
 **现状**：无构建自动化脚本。
 
@@ -178,7 +178,7 @@ type Logger interface {
 
 ---
 
-### 13. 国际化 (i18n) 只有占位
+### 13. ✅ 国际化 (i18n) 只有占位（v3.2.0 已实现运行时）
 
 **现状**：`LangConfig` 结构完整，但 runtime 无任何 i18n 逻辑。
 
@@ -213,19 +213,19 @@ func GetRequestID(c *gin.Context) string      { return c.GetString(keyRequestID)
 
 | 阶段 | 任务 | 预估工作量 |
 |------|------|-----------|
-| **P0（1-2天）** | 修复 CORS origin 匹配 bug | 0.5 天 |
-| **P0** | Rate limiter 加 TTL 清理 | 0.5 天 |
-| **P0** | 添加 Makefile | 0.5 天 |
-| **P1（1周）** | 定义 Logger 接口 + slog adapter | 2 天 |
-| **P1** | 实现 HTTPS 监听 | 1 天 |
-| **P1** | 补充核心模块测试到 70% | 2 天 |
-| **P2（2周）** | ServiceContext 替代全局单例 | 3 天 |
-| **P2** | Swagger/OpenAPI 集成 | 2 天 |
-| **P2** | 数据库迁移系统 | 2 天 |
-| **P2** | 补充 CSRF/Gzip/安全头中间件 | 2 天 |
-| **P3（长期）** | 配置热更新 | 3 天 |
-| **P3** | 分布式限流 (Redis) | 2 天 |
-| **P3** | i18n 运行时 | 2 天 |
+| **P0（1-2天）** | ✅ 修复 CORS origin 匹配 bug | 0.5 天 |
+| **P0** | ✅ Rate limiter 加 TTL 清理 | 0.5 天 |
+| **P0** | ✅ 添加 Makefile | 0.5 天 |
+| **P1（1周）** | ✅ 定义 Logger 接口 + slog adapter | 2 天 |
+| **P1** | ✅ 实现 HTTPS 监听 | 1 天 |
+| **P1** | ✅ 补充核心模块测试到 70% | 2 天 |
+| **P2（2周）** | ✅ ServiceContext 替代全局单例 | 3 天 |
+| **P2** | ✅ Swagger/OpenAPI 集成 | 2 天 |
+| **P2** | ✅ 数据库迁移系统 | 2 天 |
+| **P2** | ✅ 补充 CSRF/Gzip/安全头中间件 | 2 天 |
+| **P3（长期）** | ✅ 配置热更新 | 3 天 |
+| **P3** | ✅ 分布式限流 (Redis) | 2 天 |
+| **P3** | ✅ i18n 运行时 | 2 天 |
 
 ---
 

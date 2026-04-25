@@ -2,6 +2,87 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.2.0] - 2026-04-25
+
+本版本聚焦**架构解耦、安全加固、运维能力扩展**：Logger 接口化、CORS 安全修复、HTTPS 双监听、ServiceContext 依赖注入、六大新中间件、数据库迁移系统、配置热更新、分布式限流与 i18n 运行时。
+
+### Added
+
+- **Logger 接口抽象**（`app/log_iface.go`）
+  - 定义 `Logger` 接口，解耦业务代码与具体日志库
+  - `LogrusAdapter`：包装 `*logrus.Logger`（默认实现）
+  - `SlogAdapter`：包装 `*slog.Logger`，兼容 Go 1.21+ 标准库
+  - `WithFields` 返回新实例，线程安全
+- **HTTPS 双监听**（`framework/app.go`）
+  - 配置 `server.https.enabled=true` 后自动并发启动 HTTP + HTTPS
+  - TLS 最低版本强制 TLS 1.2
+  - Shutdown 同时优雅关闭两个 server
+- **ServiceContext 依赖容器**（`app/service_context.go`）
+  - 聚合 Config / Logger / DB / Cache 核心依赖
+  - `SvcMiddleware` 注入 gin.Context，Handler 通过 `SvcFromGin(c)` 获取
+  - 未注入时兜底全局变量，完全向后兼容
+- **CSRF 防护中间件**（`extend/middleware/csrf.go`）
+  - 双重提交 Cookie（Double Submit Cookie）方案
+  - 支持 Header `X-CSRF-Token` 和表单字段 `_csrf_token`
+- **Gzip 响应压缩**（`extend/middleware/gzip.go`）
+  - `sync.Pool` 复用 gzip.Writer，高性能
+  - 含请求体解压中间件 `GzipDecompressRequest`
+- **安全响应头**（`extend/middleware/secure_headers.go`）
+  - 默认启用 X-Content-Type-Options / X-Frame-Options / XSS-Protection / Referrer-Policy
+  - 支持配置覆盖或禁用
+- **Swagger/OpenAPI 端点**（`route/swagger.go`）
+  - `/swagger/` Swagger UI（CDN 加载，零 Go 依赖）
+  - `/swagger/doc.yaml` + `/swagger/doc.json` 静态规范文件
+  - 仅 debug 或 `swagger_enabled=true` 时暴露
+- **数据库迁移系统**（`app/database/migrate.go`）
+  - `Migrator` 管理器：Register → Migrate → Rollback → Status
+  - `_migrations` 表自动建表，版本字典序排序
+  - 迁移以 Go 函数注册，类型安全
+- **配置热更新**（`app/hot_reload.go`）
+  - `fsnotify` 监听配置目录 YAML 变更
+  - 去抖 500ms 合并高频写入
+  - 回调函数通知业务层刷新运行时状态
+- **Redis 分布式限流**（`extend/middleware/ratelimit_redis.go`）
+  - Lua 脚本原子性令牌桶算法
+  - Redis 不可用时自动降级为 no-op
+- **i18n 运行时**（`extend/i18n/`）
+  - YAML 翻译文件按 locale 加载
+  - `Accept-Language` + `?lang=` 查询参数自动语言检测
+  - `{{.Key}}` 模板变量替换
+  - Gin 中间件 + `T(c, key)` 便捷函数
+- **Makefile** — 统一 `build` / `test` / `lint` / `fmt` / `scaffold` 等命令
+
+### Changed
+
+- 全局 `app.Logger` 从 `*logrus.Logger` 改为 `Logger` 接口
+- `framework.App.logger` / `WithLogger` 改为接口类型
+- 所有中间件移除 logrus 直接依赖，改用 `app.GetLogger()` 接口
+- `route.InitRouter` 自动注入 `SvcMiddleware`
+- `applyMiddleware` 新增 `secure_headers` / `gzip` / `csrf` / `redis_rate_limit` 映射
+
+### Fixed
+
+- **CORS origin 安全 bug**：`Access-Control-Allow-Origin` 不再逗号拼接多个 origin，改为逐请求动态匹配并回写单个 origin
+- **Rate Limiter 内存泄漏**：新增 TTL 过期清理机制，定期清理不活跃 IP 桶
+
+### Internal
+
+- 新增 20+ 单元测试文件，覆盖 bootstrap / logger / adapter / service_context / hot_reload / migrate / csrf / gzip / secure_headers / i18n 等模块
+- 新增 `ReBootstrap()` 函数供测试绕过 `sync.Once`
+- `go test ./...` 全量绿
+
+### Migration Notes
+
+从 v3.1.0 升级到 v3.2.0：
+
+1. `app.GetLogger()` 返回类型从 `*logrus.Logger` 变为 `app.Logger` 接口。如果你的代码直接访问 logrus 特有方法，需改为接口方法或通过 `adapter.L` 访问底层实例。
+2. `framework.WithLogger()` 参数类型从 `*logrus.Logger` 改为 `app.Logger`。传入时使用 `app.NewLogrusAdapter(l)` 包装。
+3. `middleware.global` 列表可追加 `secure_headers` / `gzip` / `csrf` / `redis_rate_limit` 四个新中间件。
+4. 配置热更新需显式调用 `app.WatchConfig(dir, callback...)`，不会自动启用。
+5. 新增 `fsnotify` 依赖，运行 `go mod tidy` 更新。
+
+---
+
 ## [3.1.0] - 2026-04-20
 
 本版本聚焦**运行时能力的补全与生产就绪度**：Session / JWT 能力落地、K8s 探针串联真实依赖、默认配置瘦身实现零依赖开箱跑。
