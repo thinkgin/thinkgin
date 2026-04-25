@@ -20,12 +20,19 @@ var defaultMiddlewareChain = []string{
 }
 
 // InitRouter 组装完整的 Gin 引擎。
-// 装配顺序严格：全局中间件 → 静态资源/模板 → Web → API → 监控 → NoRoute 兜底。
+// 装配顺序严格：ServiceContext → 全局中间件 → 静态资源/模板 → Web → API → 监控 → NoRoute 兜底。
 func InitRouter() *gin.Engine {
 	r := gin.New()
 
 	cfg := app.GetConfig()
 	gin.SetMode(cfg.Server.Mode)
+
+	// 将 ServiceContext 注入请求链路，后续中间件和 Handler 可通过 app.SvcFromGin(c) 获取。
+	svc := &app.ServiceContext{
+		Config: cfg,
+		Log:    app.GetLogger(),
+	}
+	r.Use(app.SvcMiddleware(svc))
 
 	registerGlobalMiddleware(r, cfg)
 	registerStaticAndTemplates(r)
