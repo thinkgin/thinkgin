@@ -94,6 +94,8 @@ func applyMiddleware(r *gin.Engine, name string) {
 		r.Use(middleware.Gzip())
 	case "csrf":
 		r.Use(middleware.CSRF())
+	case "redis_rate_limit":
+		r.Use(middleware.RedisRateLimit())
 	}
 }
 
