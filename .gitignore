@@ -7,6 +7,9 @@ thinkgin-*
 
 # 测试文件
 *.test
+*.out
+coverage
+cov_*
 
 # Go 模块缓存
 go.sum.backup

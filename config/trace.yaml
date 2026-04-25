@@ -40,7 +40,7 @@ trace:
   # 追踪标签
   tags:
     environment: "development"
-    version: "3.3.3"
+    version: "3.3.4"
 
   # 需要追踪的操作
   operations:

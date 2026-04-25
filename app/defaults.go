@@ -12,7 +12,7 @@ func setDefaultConfig() {
 		Config.App.Name = "ThinkGin"
 	}
 	if Config.App.Version == "" {
-		Config.App.Version = "3.3.3"
+		Config.App.Version = "3.3.4"
 	}
 
 	// HTTP 服务
