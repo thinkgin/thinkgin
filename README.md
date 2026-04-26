@@ -1,85 +1,110 @@
 # ThinkGin
 
-基于 [Gin](https://github.com/gin-gonic/gin) 的 Go Web 应用框架，提供开箱即用的工程化基础设施。
+基于 [Gin](https://github.com/gin-gonic/gin) 的生产级 Go Web 应用框架——把配置、日志、监控、链路追踪与优雅停机收进一套统一秩序。
 
 [![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Gin](https://img.shields.io/badge/Gin-v1.12-blue)](https://github.com/gin-gonic/gin)
+[![Version](https://img.shields.io/badge/Version-3.3.4-orange)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+> **当前版本 3.3.4** — 内置 18 个可插拔中间件、ServiceContext 依赖注入、WebSocket、熔断器、超时控制等。  
+> 完整更新日志见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
-## 特性
+## 特性一览
 
-- **模块化配置** — 13 个独立 YAML 文件，按职责隔离；`THINKGIN_*` 前缀环境变量覆盖
-- **多数据源** — GORM 接入 MySQL/PostgreSQL/SQLite（SQLite 纯 Go，无 cgo）
+### 核心基础设施
+
+- **模块化配置** — 13 个独立 YAML 文件按职责隔离；`THINKGIN_*` 前缀环境变量覆盖；`fsnotify` 配置热更新
+- **ServiceContext** — 依赖注入替代全局单例，Config / Logger / DB / Cache 聚合到显式结构体
+- **多数据源** — GORM 接入 MySQL / PostgreSQL / SQLite（纯 Go，无 cgo）
 - **Redis 缓存** — `go-redis/v9` 多实例管理，启动期 Ping 探活
-- **结构化日志** — Logrus + 按天文件轮转，JSON/Text 格式可选
+- **结构化日志** — Logrus + 按天文件轮转，JSON / Text 格式可选
 - **Prometheus 监控** — HTTP 四维 + 运行时 + 业务自定义指标，配置化启停
 - **链路追踪** — OpenTelemetry TracerProvider；GORM 插件把 SQL 纳入同一条 trace
-- **优雅停机** — 信号监听 + 超时 + DB/Cache/Tracer 依序释放，适配 Kubernetes
-- **K8s 探针** — `/livez` 仅验证进程存活；`/readyz` 真实探测 DB/Redis，依赖降级时返 503
-- **可插拔中间件** — Recovery、RequestID、AccessLog、CORS、RateLimit、Trace、Prometheus、Session
-- **Session 运行时** — `memory` / `redis` 两种 Store，Cookie 安全标志自动透传（HttpOnly/Secure/SameSite）
-- **JWT 鉴权** — HS256 签发/校验，严格拒绝 `alg=none` 伪造；`JWTFromContext` 取 Claims
+- **优雅停机** — 信号监听 + 超时 + DB / Cache / Tracer 依序释放，适配 Kubernetes
+- **K8s 探针** — `/livez` 验证进程存活；`/readyz` 真实探测 DB / Redis
+- **Swagger / OpenAPI** — 内置 `/swagger/` 端点，配置 `swagger_enabled: true` 一键启用
+
+### 18 个可插拔中间件
+
+通过 `config/middleware.yaml` 按名启用，零代码修改：
+
+| 中间件 | 名称 | 说明 |
+|--------|------|------|
+| Recovery | `recovery` | panic 兜底，API 路径返回 JSON |
+| RequestID | `request_id` | 生成/透传 `X-Request-ID` |
+| AccessLog | `access_log` | 结构化访问日志，可配置跳过路径 |
+| CORS | `cors` | 动态 Origin 匹配，完整预检处理 |
+| RateLimit | `rate_limit` | 内存令牌桶，按 IP 限流 |
+| Redis 限流 | `redis_rate_limit` | 分布式限流，基于 Redis 滑动窗口 |
+| Session | `session` | memory / redis Store，Cookie 安全标志自动透传 |
+| JWT | `jwt` | HS256 签发 / 校验，拒绝 `alg=none` 伪造 |
+| CSRF | `csrf` | 双重提交 Cookie 防护 |
+| Gzip | `gzip` | 响应压缩 + 请求解压 |
+| SecureHeaders | `secure_headers` | HSTS / X-Frame-Options / CSP 等安全头 |
+| Trace | `trace` | OpenTelemetry 链路追踪 |
+| Prometheus | `prometheus` | 请求指标自动采集 |
+| **CircuitBreaker** | `circuit_breaker` | 🆕 v3.3.1 — 滑动窗口熔断器，三态状态机 |
+| **Timeout** | `timeout` | 🆕 v3.3.2 — 请求超时控制，`context.WithTimeout` |
+| **BodyLimit** | `body_limit` | 🆕 v3.3.3 — 请求体大小限制，默认 10MB |
+
+### 更多能力
+
+- **WebSocket** — 基于 gorilla/websocket，`Handler()` 一行升级；Hub 广播模型
+- **i18n 国际化** — 运行时多语言切换，Accept-Language 自动协商
+- **脚手架 CLI** — `go run ./cmd/scaffold new module user` 一键生成 MVC 骨架
+- **数据库迁移** — 推荐 `pressly/goose`，见 [`docs/database-migration.md`](docs/database-migration.md)
 
 ## 项目结构
 
 ```
 thinkgin/
 ├── main.go                       # 入口：Bootstrap → DB/Cache/Tracer → Run
-├── framework/                    # App 生命周期
-│   ├── app.go
-│   ├── options.go
-│   └── browser.go
+├── framework/                    # App 生命周期（启动/停机/浏览器打开）
 ├── app/
 │   ├── bootstrap.go              # Bootstrap(configDir) 显式入口
 │   ├── loader.go                 # 13 个 YAML 的泛型加载器
 │   ├── env.go                    # THINKGIN_* 环境变量覆盖
 │   ├── defaults.go               # 零值默认填充
-│   ├── validate.go               # 语义校验与纠偏
-│   ├── config.go / types.go      # 全局 Config 单例 + 强类型
-│   ├── logger.go                 # Logrus 初始化 + 跨平台文件轮转
+│   ├── service_context.go        # ServiceContext 依赖注入
+│   ├── config.go / types.go      # 全局 Config + 强类型
+│   ├── logger.go                 # Logrus + 跨平台文件轮转
 │   ├── database/                 # GORM 多数据源 + OTel 插件
 │   ├── cache/                    # Redis 多实例管理
+│   ├── session/                  # memory / redis Session Store
+│   ├── ctxkeys/                  # Context 类型安全 key
 │   └── index/                    # 示例业务模块 (MVC)
-│       ├── controller/
-│       ├── model/                # 含 User 示例
-│       └── view/
-├── config/                       # 13 个 YAML
-├── route/                        # 路由按 web / api 拆分
-├── extend/middleware/
-│   ├── api_response.go           # 统一响应 + Recovery
-│   ├── logger.go                 # RequestID + AccessLog
-│   ├── cors.go / ratelimit.go
-│   ├── trace.go                  # OTel TracerProvider 装配
-│   └── prometheus*.go            # 指标按 http/system/business/handler 拆分
+├── config/                       # 13 个 YAML 配置文件
+├── route/                        # Web / API 路由 + 健康探针 + Swagger
+├── extend/
+│   ├── middleware/               # 18 个可插拔中间件
+│   ├── websocket/                # WebSocket 连接 + Hub 广播
+│   └── i18n/                     # 国际化运行时
+├── cmd/scaffold/                 # 脚手架 CLI
+├── docs/                         # OpenAPI / FAQ / 迁移指南
 ├── .github/workflows/ci.yml      # 三平台矩阵 + race + coverage
-├── .golangci.yml                 # 精挑 linter
-├── public/                       # 静态资源
-└── runtime/                      # 运行时产物（日志）
+└── .golangci.yml                 # Lint 规则集
 ```
 
 ## 快速开始
 
 ### 环境要求
 
-- Go 1.25+（Gin 1.12 通过 quic-go 间接要求 Go 1.25）
+- **Go 1.25+**（Gin 1.12 通过 quic-go 间接要求）
 - Git
 
 ### 安装与运行
 
 ```bash
-# 克隆
 git clone https://gitee.com/libaicode/thinkgin.git
 cd thinkgin
 
-# 配置 Go 代理（国内用户）
+# 国内用户建议配置代理
 go env -w GOPROXY=https://goproxy.cn,direct
 
-# 下载依赖
 go mod tidy
-
-# 运行
 go run main.go
 ```
 
@@ -88,14 +113,15 @@ go run main.go
 | 地址 | 说明 |
 |------|------|
 | http://localhost:8000 | 首页 |
-| http://localhost:8000/index/hello | Hello World API |
+| http://localhost:8000/ping | 健康检查（返回版本号） |
 | http://localhost:8000/metrics | Prometheus 指标 |
 | http://localhost:8000/livez | 存活探针 |
+| http://localhost:8000/readyz | 就绪探针 |
+| http://localhost:8000/swagger/ | Swagger UI（需 `swagger_enabled: true`） |
 
 ### 编译
 
 ```bash
-# 本平台
 go build -o thinkgin main.go
 
 # 交叉编译
@@ -105,27 +131,25 @@ GOOS=darwin GOARCH=arm64 go build -o thinkgin-darwin main.go
 
 ## 配置
 
-所有配置位于 `config/` 目录，每个文件独立管理一个模块：
+所有配置位于 `config/` 目录：
 
 | 文件 | 说明 |
 |------|------|
-| `app.yaml` | 应用名、版本、JWT、分页 |
-| `server.yaml` | 监听地址、端口、超时、运行模式 |
-| `database.yaml` | MySQL/PostgreSQL/SQLite 连接 |
-| `cache.yaml` | Redis/内存缓存 |
+| `app.yaml` | 应用名、版本、JWT、分页、Swagger 开关 |
+| `server.yaml` | 监听地址、端口、超时、HTTPS、运行模式 |
+| `database.yaml` | MySQL / PostgreSQL / SQLite / Redis 连接 |
+| `cache.yaml` | Redis / 内存缓存 |
 | `log.yaml` | 日志级别、格式、轮转策略 |
-| `middleware.yaml` | 全局中间件启用列表 |
+| `middleware.yaml` | 全局中间件启用列表 + 中间件参数 |
 | `prometheus.yaml` | 监控指标、认证、采集间隔 |
 | `trace.yaml` | 链路追踪开关、采样率、导出方式 |
-| `session.yaml` | 会话存储（`memory` / `redis` 已可用） |
-| `view.yaml` | 模板引擎 |
-| `filesystem.yaml` | 文件存储（本地/OSS） |
-| `lang.yaml` | 国际化 |
+| `session.yaml` | 会话存储（memory / redis） |
+| `view.yaml` | 模板引擎（预留） |
+| `filesystem.yaml` | 文件存储（预留） |
+| `lang.yaml` | 国际化语言包 |
 | `route.yaml` | 路由配置 |
 
 ### 环境变量覆盖
-
-所有核心配置支持 `THINKGIN_` 前缀的环境变量覆盖：
 
 ```bash
 THINKGIN_SERVER_MODE=release
@@ -134,35 +158,98 @@ THINKGIN_APP_DEBUG=false
 THINKGIN_LOG_LEVEL=warn
 ```
 
+### 配置热更新
+
+基于 `fsnotify` 监听文件变化，修改 YAML 后自动重载，无需重启服务。
+
 ## 中间件
 
-通过 `config/middleware.yaml` 配置启用：
+### 基础配置
 
 ```yaml
+# config/middleware.yaml
 middleware:
   global:
     - recovery
     - request_id
-    - trace
-    - logger
-    - prometheus
+    - access_log
     - cors
     - rate_limit
+    - circuit_breaker
+    - timeout
+    - body_limit
 ```
 
-### 业务监控示例
+### 熔断器（v3.3.1）
+
+基于滑动窗口的 Circuit Breaker，三态自动切换：Closed → Open（503）→ HalfOpen → Closed。
 
 ```go
-// 计数器
+// 默认：窗口 100 / 50% 错误率 / 10s 冷却 / 5 次试探
+r.Use(middleware.CircuitBreaker())
+
+// 自定义
+r.Use(middleware.CircuitBreakerWithConfig(middleware.CircuitBreakerConfig{
+    WindowSize:            200,
+    ErrorThresholdPercent: 30,
+    CooldownDuration:      5 * time.Second,
+    HalfOpenMaxRequests:   3,
+}))
+```
+
+### 超时控制（v3.3.2）
+
+为每个请求注入 `context.WithTimeout`，超时返回 504 Gateway Timeout。
+
+```go
+r.Use(middleware.Timeout())                          // 默认 30s
+r.Use(middleware.TimeoutWithDuration(5 * time.Second)) // 自定义
+```
+
+Handler 应使用 `c.Request.Context()` 感知超时信号。
+
+### 请求体限制（v3.3.3）
+
+Content-Length 预检 + `MaxBytesReader` 双重保护，超限返回 413。
+
+```go
+r.Use(middleware.BodyLimit())                       // 默认 10MB
+r.Use(middleware.BodyLimitWithSize(5 << 20))         // 5MB
+h, _ := middleware.BodyLimitFromString("512KB")      // 字符串解析
+r.Use(h)
+```
+
+### 安全中间件
+
+```yaml
+middleware:
+  global:
+    - csrf            # 双重提交 Cookie
+    - secure_headers  # HSTS / X-Frame-Options / CSP
+    - gzip            # 响应压缩
+```
+
+### 业务监控
+
+```go
 if c := middleware.BusinessCounter("api_calls", []string{"endpoint"}); c != nil {
     c.WithLabelValues("/api/users").Inc()
 }
-
-// 直方图
 if h := middleware.BusinessHistogram("api_duration", []string{"endpoint"}, nil); h != nil {
     h.WithLabelValues("/api/users").Observe(elapsed.Seconds())
 }
 ```
+
+## ServiceContext
+
+v3.3.0 引入 `ServiceContext` 替代全局单例：
+
+```go
+svc := app.SvcFromGin(c)
+svc.Log.Infof("当前应用: %s", svc.Config.App.Name)
+```
+
+保留 `app.GetConfig()` / `app.GetLogger()` 全局函数向后兼容。
 
 ## 数据库与缓存
 
@@ -172,80 +259,57 @@ import (
     "thinkgin/app/database"
 )
 
-// 默认连接（对应 database.yaml 的 default 字段）
 db := database.Default()
-
-// 或按名取
 pg, _ := database.Get("pgsql")
-
-// Redis
 rdb := cache.Default()
+
+// GORM + OTel：传递 context 自动纳入 trace
+database.Default().WithContext(c.Request.Context()).Find(&users)
 ```
 
-GORM 插件会自动为每条 SQL 开启 span，并以当前 HTTP 请求的 trace 为父节点——
-前提是业务代码用 `db.WithContext(c.Request.Context())` 传递 context：
+## WebSocket
 
 ```go
-func ListUsers(c *gin.Context) {
-    var users []model.User
-    database.Default().WithContext(c.Request.Context()).Find(&users)
-    c.JSON(200, users)
-}
+import "thinkgin/extend/websocket"
+
+// Echo
+r.GET("/ws", websocket.Handler(func(conn *websocket.Conn) {
+    defer conn.Close()
+    for {
+        mt, msg, err := conn.Conn.ReadMessage()
+        if err != nil { break }
+        conn.WriteSafeMessage(mt, msg)
+    }
+}))
+
+// Hub 广播
+hub := websocket.NewHub()
+hub.Broadcast(ws.TextMessage, msg)
+hub.BroadcastJSON(map[string]string{"event": "join"})
 ```
 
 ## Session
 
-在 `config/middleware.yaml` 的 `global` 列表里加上 `session`，框架即自动挂载：
-
-```yaml
-middleware:
-  global:
-    - recovery
-    - request_id
-    - session
-```
-
-业务代码：
-
 ```go
 import "thinkgin/app/session"
 
-func Profile(c *gin.Context) {
-    s := session.From(c)
-    s.Set("user_id", 42)
-    if err := s.Save(c.Request.Context()); err != nil {
-        c.AbortWithError(500, err)
-        return
-    }
-    c.JSON(200, gin.H{"ok": true})
-}
-
-func Logout(c *gin.Context) {
-    _ = session.From(c).Destroy(c.Request.Context())
-    session.ClearCookie(c)
-    c.JSON(200, gin.H{"ok": true})
-}
+s := session.From(c)
+s.Set("user_id", 42)
+_ = s.Save(c.Request.Context())
 ```
-
-Store 切换仅需改 `config/session.yaml`：
 
 | driver | 状态 | 适用场景 |
 |--------|------|----------|
-| `memory` | 可用 | 单实例 / 开发调试 |
-| `redis`  | 可用 | 多副本部署，引用 `database.yaml` 中的 redis 连接 |
-| `file` / `database` | 未实现 | — |
+| `memory` | ✅ 可用 | 单实例 / 开发调试 |
+| `redis` | ✅ 可用 | 多副本部署 |
 
 ## JWT 鉴权
 
-密钥配置在 `config/app.yaml` 的 `app.jwt.secret`；过期时间 `app.jwt.expire`（秒）。
-
 ```go
-import "thinkgin/extend/middleware"
-
-// 签发（ttl=0 时使用 app.jwt.expire；仍为 0 时兜底 2 小时）
+// 签发
 token, err := middleware.JWTIssue("42", map[string]any{"role": "admin"}, 0)
 
-// 保护路由：middleware.yaml 的 global 里加 "jwt"，或按 group 注入
+// 保护路由
 api := r.Group("/api/v1", middleware.JWTAuth())
 api.GET("/me", func(c *gin.Context) {
     claims := middleware.JWTFromContext(c)
@@ -253,33 +317,31 @@ api.GET("/me", func(c *gin.Context) {
 })
 ```
 
-签名算法固定 HS256，解析时严格拒绝非 HMAC 算法，避免 `alg=none` 之类经典漏洞。
+HS256 签名，严格拒绝非 HMAC 算法。
 
 ## 脚手架 CLI
 
-生成新的业务模块骨架（MVC 三件套）：
-
 ```bash
 go run ./cmd/scaffold new module user
-# app/user/controller/user.go
-# app/user/model/user.go
-# app/user/view/.gitkeep
+# → app/user/controller/user.go
+# → app/user/model/user.go
+# → app/user/view/.gitkeep
 ```
-
-命名规则：模块名必须以小写字母开头，只允许 `a-z / 0-9 / _`。
 
 ## 测试 & CI
 
 ```bash
 go test ./...
-# 启用竞态检测（需要 cgo）
 CGO_ENABLED=1 go test -race ./...
 ```
 
-仓库根目录的 `.github/workflows/ci.yml` 会在 push / PR 时跑：
+GitHub Actions CI（`.github/workflows/ci.yml`）：
 
-- **Build & Test**：Ubuntu / Windows / macOS 三矩阵，启用 `-race` + coverage
-- **Lint**：`golangci-lint`，规则集见 `.golangci.yml`
+- **三平台矩阵**：Ubuntu / Windows / macOS
+- **竞态检测** + **覆盖率报告**
+- **golangci-lint** 静态分析
+
+当前覆盖率：middleware **62%**、route **37%**。
 
 ## 部署
 
@@ -301,13 +363,11 @@ CMD ["./thinkgin"]
 ```
 
 ```bash
-docker build -t thinkgin:3.0 .
-docker run -p 8000:8000 thinkgin:3.0
+docker build -t thinkgin:3.3.4 .
+docker run -p 8000:8000 thinkgin:3.3.4
 ```
 
 ### Kubernetes
-
-框架内置 `/livez` 和 `/readyz` 探针，可直接配置：
 
 ```yaml
 livenessProbe:
@@ -330,29 +390,32 @@ readinessProbe:
 | [go.opentelemetry.io/otel](https://opentelemetry.io/) v1.28 | 链路追踪 |
 | [gorm.io/gorm](https://gorm.io/) v1.31 | ORM |
 | [redis/go-redis/v9](https://github.com/redis/go-redis) v9.18 | Redis 客户端 |
+| [gorilla/websocket](https://github.com/gorilla/websocket) v1.5 | WebSocket |
+| [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify) v1.9 | 配置热更新 |
+| [golang-jwt/jwt/v5](https://github.com/golang-jwt/jwt) v5.3 | JWT |
 | [glebarez/sqlite](https://github.com/glebarez/sqlite) | SQLite 纯 Go 驱动 |
-| [lestrrat-go/file-rotatelogs](https://github.com/lestrrat-go/file-rotatelogs) | 日志轮转 |
 | [gopkg.in/yaml.v3](https://gopkg.in/yaml.v3) | YAML 解析 |
 
-## 从 ThinkPHP 迁移？
+## 版本历史
 
-如果你之前用 ThinkPHP，建议阅读 [`docs/migration-from-thinkphp.md`](docs/migration-from-thinkphp.md)，
-里面列出了最常见的 20+ 对照项（Model、Route、Middleware、Config、View 等）。
+| 版本 | 亮点 |
+|------|------|
+| **3.3.4** | middleware 测试覆盖率 62%，route 37% |
+| **3.3.3** | 请求体大小限制中间件（BodyLimit） |
+| **3.3.2** | 请求超时控制中间件（Timeout） |
+| **3.3.1** | 熔断器中间件（CircuitBreaker） |
+| **3.3.0** | ServiceContext / CSRF / Gzip / SecureHeaders / Swagger / 热更新 / Redis 限流 / i18n / WebSocket |
+| **3.2.0** | Logger 接口抽象 / HTTPS 双监听 |
 
-## 数据库迁移
+详见 [CHANGELOG.md](CHANGELOG.md)。
 
-框架不内置迁移工具，推荐使用 [`pressly/goose`](https://github.com/pressly/goose)。
-用法与目录约定见 [`docs/database-migration.md`](docs/database-migration.md)。
+## 相关文档
 
-## FAQ / 设计决策
-
-一些反复被问到的问题和背后的取舍，集中写在 [`docs/faq.md`](docs/faq.md)：
-
-- 为什么没有再封装一层"类 ThinkPHP 的 Model 链式调用"？
-- 为什么 Redis 的连接定义放在 `database.yaml`，而不是 `cache.yaml`？
-- 为什么默认配置不预置 MySQL / Redis 连接？
-- 为什么 `view.yaml` / `filesystem.yaml` / `lang.yaml` 里几乎是空的？
-- 为什么 `init()` 里还保留了自动加载配置？
+- 📖 [官方文档](https://gitee.com/libaicode/home-thinkgin)
+- 📋 [从 ThinkPHP 迁移](docs/migration-from-thinkphp.md)
+- 🗃️ [数据库迁移指南](docs/database-migration.md)
+- ❓ [FAQ / 设计决策](docs/faq.md)
+- 📝 [OpenAPI 定义](docs/openapi.yaml)
 
 ## 致谢
 
