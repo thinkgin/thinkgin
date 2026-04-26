@@ -1,6 +1,6 @@
 # ThinkGin
 
-基于 [Gin](https://github.com/gin-gonic/gin) 的生产级 Go Web 应用框架——把配置、日志、监控、链路追踪与优雅停机收进一套统一秩序。
+基于 Gin 的生产级 Go Web 框架——配置即秩序，中间件即能力，开箱即交付。
 
 [![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Gin](https://img.shields.io/badge/Gin-v1.12-blue)](https://github.com/gin-gonic/gin)
