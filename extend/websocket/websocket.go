@@ -42,12 +42,12 @@ func (c *Conn) WriteJSON(v any) error {
 func (c *Conn) WriteSafeMessage(messageType int, data []byte) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.Conn.WriteMessage(messageType, data)
+	return c.WriteMessage(messageType, data)
 }
 
 // ReadJSON 从连接读取一条 JSON 消息并解码。
 func (c *Conn) ReadJSON(v any) error {
-	_, msg, err := c.Conn.ReadMessage()
+	_, msg, err := c.ReadMessage()
 	if err != nil {
 		return err
 	}

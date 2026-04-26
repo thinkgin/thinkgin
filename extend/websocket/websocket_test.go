@@ -15,12 +15,18 @@ func init() {
 	gin.SetMode(gin.TestMode)
 }
 
+func closeResponseBody(resp *http.Response) {
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
+}
+
 // setupEchoServer 创建一个 echo WebSocket 测试服务器。
 func setupEchoServer() *httptest.Server {
 	r := gin.New()
 	r.GET("/ws", Handler(func(conn *Conn) {
 		for {
-			mt, msg, err := conn.Conn.ReadMessage()
+			mt, msg, err := conn.ReadMessage()
 			if err != nil {
 				break
 			}
@@ -37,7 +43,8 @@ func TestHandler_EchoMessage(t *testing.T) {
 	defer srv.Close()
 
 	url := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws"
-	conn, _, err := ws.DefaultDialer.Dial(url, nil)
+	conn, resp, err := ws.DefaultDialer.Dial(url, nil)
+	closeResponseBody(resp)
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
@@ -77,6 +84,7 @@ func TestHandlerWithUpgrader_CustomOriginCheck(t *testing.T) {
 
 	// 无 Origin → 被拒绝
 	_, resp, err := ws.DefaultDialer.Dial(url, nil)
+	closeResponseBody(resp)
 	if err == nil {
 		t.Fatal("expected dial to fail without Origin header")
 	}
@@ -87,7 +95,8 @@ func TestHandlerWithUpgrader_CustomOriginCheck(t *testing.T) {
 	// 带正确 Origin → 成功
 	header := http.Header{}
 	header.Set("Origin", "https://allowed.example.com")
-	conn, _, err := ws.DefaultDialer.Dial(url, header)
+	conn, resp, err := ws.DefaultDialer.Dial(url, header)
+	closeResponseBody(resp)
 	if err != nil {
 		t.Fatalf("dial with allowed origin: %v", err)
 	}
@@ -115,7 +124,8 @@ func TestConn_WriteJSON(t *testing.T) {
 	defer srv.Close()
 
 	url := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws"
-	conn, _, err := ws.DefaultDialer.Dial(url, nil)
+	conn, resp, err := ws.DefaultDialer.Dial(url, nil)
+	closeResponseBody(resp)
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
@@ -140,7 +150,7 @@ func TestHub_BroadcastAndLen(t *testing.T) {
 		defer hub.Unregister(conn)
 		// 阻塞直到客户端断开
 		for {
-			_, _, err := conn.Conn.ReadMessage()
+			_, _, err := conn.ReadMessage()
 			if err != nil {
 				break
 			}
@@ -152,13 +162,15 @@ func TestHub_BroadcastAndLen(t *testing.T) {
 	url := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws"
 
 	// 连接 2 个客户端
-	c1, _, err := ws.DefaultDialer.Dial(url, nil)
+	c1, resp, err := ws.DefaultDialer.Dial(url, nil)
+	closeResponseBody(resp)
 	if err != nil {
 		t.Fatalf("dial c1: %v", err)
 	}
 	defer c1.Close()
 
-	c2, _, err := ws.DefaultDialer.Dial(url, nil)
+	c2, resp, err := ws.DefaultDialer.Dial(url, nil)
+	closeResponseBody(resp)
 	if err != nil {
 		t.Fatalf("dial c2: %v", err)
 	}
@@ -195,7 +207,7 @@ func TestHub_BroadcastJSON(t *testing.T) {
 		hub.Register(conn)
 		defer hub.Unregister(conn)
 		for {
-			_, _, err := conn.Conn.ReadMessage()
+			_, _, err := conn.ReadMessage()
 			if err != nil {
 				break
 			}
@@ -205,7 +217,8 @@ func TestHub_BroadcastJSON(t *testing.T) {
 	defer srv.Close()
 
 	url := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws"
-	c, _, err := ws.DefaultDialer.Dial(url, nil)
+	c, resp, err := ws.DefaultDialer.Dial(url, nil)
+	closeResponseBody(resp)
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}

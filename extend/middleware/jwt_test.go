@@ -44,13 +44,13 @@ func resetJWTConfig(t *testing.T, secret string, expireSec int) {
 
 func TestExtractBearer(t *testing.T) {
 	cases := map[string]string{
-		"Bearer abc.def.ghi":   "abc.def.ghi",
-		"bearer abc":           "abc",
-		"  Bearer   x  ":       "x",
-		"Basic abc":            "",
-		"":                     "",
-		"Bearer":               "",
-		"Bearer a b":           "",
+		"Bearer abc.def.ghi": "abc.def.ghi",
+		"bearer abc":         "abc",
+		"  Bearer   x  ":     "x",
+		"Basic abc":          "",
+		"":                   "",
+		"Bearer":             "",
+		"Bearer a b":         "",
 	}
 	for in, want := range cases {
 		if got := extractBearer(in); got != want {
@@ -183,9 +183,3 @@ func TestJWTAuth_ExpiredTokenReturns401(t *testing.T) {
 }
 
 // oppositeChar 返回 base64url 字符集里与 c 不同的另一字符，用于伪造签名。
-func oppositeChar(c byte) string {
-	if c == 'A' {
-		return "B"
-	}
-	return "A"
-}
