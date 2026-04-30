@@ -128,6 +128,10 @@ func resolveMiddleware(name string) gin.HandlerFunc {
 		return middleware.Timeout()
 	case "body_limit":
 		return middleware.BodyLimit()
+	case "validation":
+		// validation 不是全局中间件，而是在 Handler 内通过 BindAndValidate 调用。
+		// 此处返回 no-op，仅为了让 middleware.groups 配置中写 "validation" 不报错。
+		return func(c *gin.Context) { c.Next() }
 	default:
 		return nil
 	}

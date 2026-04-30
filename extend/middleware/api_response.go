@@ -3,11 +3,13 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
 	"thinkgin/app"
 	"thinkgin/app/ctxkeys"
+	apperrors "thinkgin/app/errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -35,8 +37,24 @@ func APIError(c *gin.Context, httpStatus int, code int, message string) {
 	c.Abort()
 }
 
+// APIAppError 输出由 *apperrors.AppError 驱动的结构化错误响应。
+// 自动提取 HTTPStatus / Code / Message / Data。
+func APIAppError(c *gin.Context, err *apperrors.AppError) {
+	body := gin.H{
+		"code":       err.Code,
+		"message":    err.Message,
+		"request_id": ctxkeys.GetRequestID(c),
+	}
+	if err.Data != nil {
+		body["data"] = err.Data
+	}
+	c.JSON(err.HTTPStatus, body)
+	c.Abort()
+}
+
 // APIErrorHandler 用于捕获 handler 通过 c.Error 抛出的错误，
-// 并在未写入响应时统一返回 500 结构化响应。
+// 并在未写入响应时统一返回结构化响应。
+// 若错误为 *apperrors.AppError 类型，自动提取错误码；否则回退到 500。
 func APIErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
@@ -45,10 +63,17 @@ func APIErrorHandler() gin.HandlerFunc {
 			return
 		}
 
+		lastErr := c.Errors.Last().Err
+		var appErr *apperrors.AppError
+		if errors.As(lastErr, &appErr) {
+			APIAppError(c, appErr)
+			return
+		}
+
 		msg := "internal error"
 		cfg := app.GetConfig()
 		if cfg != nil && cfg.App.Debug {
-			msg = c.Errors.Last().Error()
+			msg = lastErr.Error()
 		}
 		APIError(c, http.StatusInternalServerError, http.StatusInternalServerError, msg)
 	}

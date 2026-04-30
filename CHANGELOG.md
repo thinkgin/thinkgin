@@ -2,6 +2,28 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.4.0] - 2026-04-30
+
+### Added
+
+- **结构化错误码体系**：新增 `app/errors` 包，提供 `AppError` 类型
+  - 支持 `errors.Is` / `errors.As`，Code 相同即视为同一错误
+  - 预定义 14 个通用错误码（400000~504000）
+  - `WithMsg` / `WithData` / `WithCause` 不可变派生
+  - `APIErrorHandler` 自动识别 `*AppError` 并格式化响应
+  - `APIAppError()` 函数直接输出 AppError 驱动的 JSON
+- **请求参数校验层**：新增 `extend/middleware/validation.go`
+  - `BindAndValidate(c, &req)` 一行完成绑定+校验
+  - 校验失败自动返回 422 + 字段级中文错误消息
+  - 覆盖 required/min/max/email/oneof/gt/gte/lt/lte 等常用规则
+  - `resolveMiddleware` 新增 `validation` 名称映射
+- **统一分页响应**：新增 `app/pagination` 包
+  - `FromQuery(c)` 自动解析 page/page_size，尊重 app.yaml 配置
+  - `NewResult(params, total, list)` 生成 `{list, total, page, page_size, total_pages}` 响应
+  - 自动 cap 到 max_page_size，负数 page 重置为 1
+
+---
+
 ## [3.3.5] - 2026-04-30
 
 ### Fixed
