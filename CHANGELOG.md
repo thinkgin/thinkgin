@@ -2,6 +2,33 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.6.0] - 2026-04-30
+
+### Added
+
+- **CLI 命令框架（Cobra）**：`main.go` 重构为 Cobra 入口
+  - `serve` — 启动 HTTP 服务器（默认命令，向后兼容）
+  - `version` — 打印版本号
+  - `config` — 输出合并后的完整配置（JSON）
+  - `cron` — 启动定时任务调度器
+  - 无参数运行等同于 `serve`
+- **Cron 定时任务调度器**：新增 `extend/cron` 包
+  - 基于 robfig/cron v3，支持秒级 cron 表达式和 `@every` 语法
+  - `Register(name, schedule, fn)` 注册 + `Start()` 启动 + `Stop()` 优雅停机
+  - 任务 panic 自动恢复不影响其他任务
+  - `cmd/cron.go` 子命令：独立进程运行调度器
+- **事件系统（发布/订阅）**：新增 `extend/event` 包
+  - `On(name, listener)` 订阅 + `Fire(name, payload)` 同步发布
+  - `FireAsync` 异步发布，每个订阅者独立 goroutine
+  - 内置生命周期事件：`AppStarting` / `AppStarted` / `AppStopping` / `AppStopped`
+  - `Off` 移除 + `ListenerCount` 查询 + panic 自动恢复
+
+### Changed
+
+- `main.go` 从 116 行精简为 Cobra 入口（18 行），原逻辑迁入 `cmd/serve.go`
+
+---
+
 ## [3.5.0] - 2026-04-30
 
 ### Added
