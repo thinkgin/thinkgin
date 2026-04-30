@@ -4,10 +4,10 @@
 
 [![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Gin](https://img.shields.io/badge/Gin-v1.12-blue)](https://github.com/gin-gonic/gin)
-[![Version](https://img.shields.io/badge/Version-3.3.4-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-3.8.1-orange)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **当前版本 3.3.4** — 内置 18 个可插拔中间件、ServiceContext 依赖注入、WebSocket、熔断器、超时控制等。  
+> **当前版本 3.8.1** — 内置 18 个可插拔中间件、ServiceContext 依赖注入、WebSocket、按路由粒度熔断器、atomic 配置热更新、lumberjack 日志轮转等。  
 > 完整更新日志见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
@@ -16,11 +16,11 @@
 
 ### 核心基础设施
 
-- **模块化配置** — 13 个独立 YAML 文件按职责隔离；`THINKGIN_*` 前缀环境变量覆盖；`fsnotify` 配置热更新
+- **模块化配置** — 13 个独立 YAML 文件按职责隔离；`THINKGIN_*` 前缀环境变量覆盖（含 JWT Secret）；`fsnotify` 配置热更新（atomic.Pointer 原子替换，并发安全）
 - **ServiceContext** — 依赖注入替代全局单例，Config / Logger / DB / Cache 聚合到显式结构体
 - **多数据源** — GORM 接入 MySQL / PostgreSQL / SQLite（纯 Go，无 cgo）
 - **Redis 缓存** — `go-redis/v9` 多实例管理，启动期 Ping 探活
-- **结构化日志** — Logrus + 按天文件轮转，JSON / Text 格式可选
+- **结构化日志** — Logrus + lumberjack 按大小轮转（自动压缩），JSON / Text 格式可选
 - **Prometheus 监控** — HTTP 四维 + 运行时 + 业务自定义指标，配置化启停
 - **链路追踪** — OpenTelemetry TracerProvider；GORM 插件把 SQL 纳入同一条 trace
 - **优雅停机** — 信号监听 + 超时 + DB / Cache / Tracer 依序释放，适配 Kubernetes
@@ -46,9 +46,9 @@
 | SecureHeaders | `secure_headers` | HSTS / X-Frame-Options / CSP 等安全头 |
 | Trace | `trace` | OpenTelemetry 链路追踪 |
 | Prometheus | `prometheus` | 请求指标自动采集 |
-| **CircuitBreaker** | `circuit_breaker` | 🆕 v3.3.1 — 滑动窗口熔断器，三态状态机 |
-| **Timeout** | `timeout` | 🆕 v3.3.2 — 请求超时控制，`context.WithTimeout` |
-| **BodyLimit** | `body_limit` | 🆕 v3.3.3 — 请求体大小限制，默认 10MB |
+| **CircuitBreaker** | `circuit_breaker` | 滑动窗口熔断器，三态状态机，**按路由粒度隔离** |
+| **Timeout** | `timeout` | 请求超时控制，`context.WithTimeout` |
+| **BodyLimit** | `body_limit` | 请求体大小限制，默认 10MB |
 
 ### 更多能力
 
@@ -69,8 +69,9 @@ thinkgin/
 │   ├── env.go                    # THINKGIN_* 环境变量覆盖
 │   ├── defaults.go               # 零值默认填充
 │   ├── service_context.go        # ServiceContext 依赖注入
-│   ├── config.go / types.go      # 全局 Config + 强类型
-│   ├── logger.go                 # Logrus + 跨平台文件轮转
+│   ├── config.go / types.go      # 全局 Config（atomic.Pointer 线程安全）
+│   ├── version.go                # 版本号唯一来源，支持 ldflags 注入
+│   ├── logger.go                 # Logrus + lumberjack 日志轮转
 │   ├── database/                 # GORM 多数据源 + OTel 插件
 │   ├── cache/                    # Redis 多实例管理
 │   ├── session/                  # memory / redis Session Store
@@ -123,6 +124,9 @@ go run main.go
 
 ```bash
 go build -o thinkgin main.go
+
+# 通过 ldflags 注入版本号（CI/CD 推荐）
+go build -ldflags "-X thinkgin/app.Version=3.8.1" -o thinkgin main.go
 
 # 交叉编译
 GOOS=linux GOARCH=amd64 go build -o thinkgin-linux main.go
@@ -180,9 +184,10 @@ middleware:
     - body_limit
 ```
 
-### 熔断器（v3.3.1）
+### 熔断器
 
-基于滑动窗口的 Circuit Breaker，三态自动切换：Closed → Open（503）→ HalfOpen → Closed。
+基于滑动窗口的 Circuit Breaker，三态自动切换：Closed → Open（503）→ HalfOpen → Closed。  
+v3.7.2 起支持**按路由粒度隔离**——每条路由拥有独立的滑动窗口和状态机，避免单个慢接口拖垮全局。
 
 ```go
 // 默认：窗口 100 / 50% 错误率 / 10s 冷却 / 5 次试探
@@ -197,7 +202,7 @@ r.Use(middleware.CircuitBreakerWithConfig(middleware.CircuitBreakerConfig{
 }))
 ```
 
-### 超时控制（v3.3.2）
+### 超时控制
 
 为每个请求注入 `context.WithTimeout`，超时返回 504 Gateway Timeout。
 
@@ -208,7 +213,7 @@ r.Use(middleware.TimeoutWithDuration(5 * time.Second)) // 自定义
 
 Handler 应使用 `c.Request.Context()` 感知超时信号。
 
-### 请求体限制（v3.3.3）
+### 请求体限制
 
 Content-Length 预检 + `MaxBytesReader` 双重保护，超限返回 413。
 
@@ -363,8 +368,8 @@ CMD ["./thinkgin"]
 ```
 
 ```bash
-docker build -t thinkgin:3.3.4 .
-docker run -p 8000:8000 thinkgin:3.3.4
+docker build -t thinkgin:3.8.1 .
+docker run -p 8000:8000 thinkgin:3.8.1
 ```
 
 ### Kubernetes
@@ -393,6 +398,7 @@ readinessProbe:
 | [gorilla/websocket](https://github.com/gorilla/websocket) v1.5 | WebSocket |
 | [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify) v1.9 | 配置热更新 |
 | [golang-jwt/jwt/v5](https://github.com/golang-jwt/jwt) v5.3 | JWT |
+| [natefinch/lumberjack](https://github.com/natefinch/lumberjack) v2.2 | 日志轮转（按大小 + 按时间） |
 | [glebarez/sqlite](https://github.com/glebarez/sqlite) | SQLite 纯 Go 驱动 |
 | [gopkg.in/yaml.v3](https://gopkg.in/yaml.v3) | YAML 解析 |
 
@@ -400,10 +406,15 @@ readinessProbe:
 
 | 版本 | 亮点 |
 |------|------|
+| **3.8.1** | 统一版本号管理（`app/version.go` + ldflags 注入） |
+| **3.8.0** | 日志轮转替换为 lumberjack，移除 archived 依赖 |
+| **3.7.2** | 熔断器按路由粒度隔离 |
+| **3.7.1** | LoadHTMLGlob 安全检查 |
+| **3.7.0** | 配置热更新 atomic.Pointer 原子替换 |
+| **3.6.3** | JWT Secret/Expire 环境变量注入 |
+| **3.6.2** | CORS AllowCredentials + * 安全修复 |
+| **3.6.1** | CSRF Token 时序攻击修复 |
 | **3.3.4** | middleware 测试覆盖率 62%，route 37% |
-| **3.3.3** | 请求体大小限制中间件（BodyLimit） |
-| **3.3.2** | 请求超时控制中间件（Timeout） |
-| **3.3.1** | 熔断器中间件（CircuitBreaker） |
 | **3.3.0** | ServiceContext / CSRF / Gzip / SecureHeaders / Swagger / 热更新 / Redis 限流 / i18n / WebSocket |
 | **3.2.0** | Logger 接口抽象 / HTTPS 双监听 |
 
