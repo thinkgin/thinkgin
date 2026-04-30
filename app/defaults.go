@@ -17,7 +17,7 @@ func setDefaultsOn(cfg *GlobalConfig) {
 		cfg.App.Name = "ThinkGin"
 	}
 	if cfg.App.Version == "" {
-		cfg.App.Version = "3.8.0"
+		cfg.App.Version = Version
 	}
 
 	// HTTP 服务

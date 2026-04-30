@@ -16,11 +16,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "打印版本号",
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := app.GetConfig()
-		if cfg != nil && cfg.App.Version != "" {
-			fmt.Printf("ThinkGin v%s\n", cfg.App.Version)
-		} else {
-			fmt.Println("ThinkGin (version unknown)")
-		}
+		// 优先使用 app.Version（支持 ldflags 编译注入）。
+		fmt.Printf("ThinkGin v%s\n", app.Version)
 	},
 }

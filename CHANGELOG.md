@@ -2,6 +2,18 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.8.1] - 2026-04-30
+
+### Changed
+
+- **统一版本号管理**：新增 `app/version.go` 作为版本号唯一来源（Single Source of Truth）
+  - 支持 `go build -ldflags "-X thinkgin/app.Version=x.y.z"` 编译期注入
+  - `defaults.go` 从 `app.Version` 变量读取，不再硬编码
+  - `cmd/version.go` 直接使用 `app.Version`，确保版本号全局一致
+  - 测试中也引用 `Version` 变量，版本更新无需再改测试文件
+
+---
+
 ## [3.8.0] - 2026-04-30
 
 ### Changed
