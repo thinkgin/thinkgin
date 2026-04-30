@@ -392,7 +392,7 @@ readinessProbe:
 | [gin-gonic/gin](https://github.com/gin-gonic/gin) v1.12 | HTTP 路由 |
 | [sirupsen/logrus](https://github.com/sirupsen/logrus) v1.9 | 结构化日志 |
 | [prometheus/client_golang](https://github.com/prometheus/client_golang) v1.20 | 监控指标 |
-| [go.opentelemetry.io/otel](https://opentelemetry.io/) v1.28 | 链路追踪 |
+| [go.opentelemetry.io/otel](https://opentelemetry.io/) v1.43 | 链路追踪 |
 | [gorm.io/gorm](https://gorm.io/) v1.31 | ORM |
 | [redis/go-redis/v9](https://github.com/redis/go-redis) v9.18 | Redis 客户端 |
 | [gorilla/websocket](https://github.com/gorilla/websocket) v1.5 | WebSocket |
