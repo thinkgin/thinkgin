@@ -2,6 +2,15 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.6.2] - 2026-04-30
+
+### Fixed
+
+- **CORS AllowCredentials + * 安全修复**：当 `allow_credentials=true` 且 `allow_origins=["*"]` 时，不再返回 `Access-Control-Allow-Origin: *`（W3C 规范禁止），改为回显请求 Origin 并附加 `Vary: Origin`
+- 启动时对此非法配置组合打印警告日志，提示显式列出可信域名
+
+---
+
 ## [3.6.1] - 2026-04-30
 
 ### Fixed

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -47,7 +48,12 @@ func CORS() gin.HandlerFunc {
 
 		// Access-Control-Allow-Origin 标准只接受单个 origin 或 "*"。
 		// 多 origin 场景必须逐请求匹配后动态回写该 origin。
-		if allowAll {
+		// W3C 规范：AllowCredentials=true 时不允许返回 "*"，必须回显具体 origin。
+		if allowAll && cfg.AllowCredentials {
+			// credentials 模式下回显请求 Origin，同时加 Vary 标记。
+			c.Header("Access-Control-Allow-Origin", origin)
+			c.Header("Vary", "Origin")
+		} else if allowAll {
 			c.Header("Access-Control-Allow-Origin", "*")
 		} else if _, ok := originSet[origin]; ok {
 			c.Header("Access-Control-Allow-Origin", origin)
@@ -142,6 +148,12 @@ func getCORSConfig() corsConfig {
 		if i, ok := toInt(v); ok {
 			out.MaxAge = i
 		}
+	}
+
+	// 安全校验：AllowCredentials + AllowOrigins=* 组合在启动时发出警告。
+	if out.AllowCredentials && len(out.AllowOrigins) == 1 && out.AllowOrigins[0] == "*" {
+		fmt.Println("[cors] WARNING: allow_credentials=true 与 allow_origins=[*] 同时配置，" +
+			"框架将自动回显请求 Origin 而非返回 *，建议显式列出可信域名")
 	}
 
 	return out
