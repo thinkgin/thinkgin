@@ -169,18 +169,50 @@ func (cb *circuitBreaker) toClosed() {
 	}
 }
 
+// ──────────── 按路由粒度的熔断器注册表 ────────────
+
+// cbRegistry 为每条路由维护独立的 circuitBreaker，
+// 避免一个慢接口（如文件上传）的错误率影响其他接口。
+type cbRegistry struct {
+	cbs sync.Map // map[string]*circuitBreaker
+	cfg CircuitBreakerConfig
+}
+
+// getOrCreate 按路由 key 获取或懒创建对应的 circuitBreaker。
+func (r *cbRegistry) getOrCreate(key string) *circuitBreaker {
+	if v, ok := r.cbs.Load(key); ok {
+		return v.(*circuitBreaker)
+	}
+	cb := newCircuitBreaker(r.cfg)
+	actual, _ := r.cbs.LoadOrStore(key, cb)
+	return actual.(*circuitBreaker)
+}
+
+// routeKey 提取路由粒度的标识：优先用 Gin 注册的路由模板（如 /api/users/:id），
+// 未匹配到路由时回退为 METHOD+Path，避免高基数问题。
+func routeKey(c *gin.Context) string {
+	if tpl := c.FullPath(); tpl != "" {
+		return c.Request.Method + " " + tpl
+	}
+	return c.Request.Method + " " + c.Request.URL.Path
+}
+
 // ──────────── Gin 中间件 ────────────
 
-// CircuitBreaker 返回使用默认配置的熔断器中间件。
+// CircuitBreaker 返回使用默认配置的按路由粒度熔断器中间件。
 func CircuitBreaker() gin.HandlerFunc {
 	return CircuitBreakerWithConfig(DefaultCircuitBreakerConfig())
 }
 
-// CircuitBreakerWithConfig 返回使用自定义配置的熔断器中间件。
+// CircuitBreakerWithConfig 返回使用自定义配置的按路由粒度熔断器中间件。
+// 每条路由拥有独立的滑动窗口和状态机，互不影响。
 func CircuitBreakerWithConfig(cfg CircuitBreakerConfig) gin.HandlerFunc {
-	cb := newCircuitBreaker(cfg)
+	reg := &cbRegistry{cfg: cfg}
 
 	return func(c *gin.Context) {
+		key := routeKey(c)
+		cb := reg.getOrCreate(key)
+
 		if !cb.allow() {
 			c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{
 				"code":    http.StatusServiceUnavailable,

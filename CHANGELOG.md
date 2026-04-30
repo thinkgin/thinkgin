@@ -2,6 +2,17 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.7.2] - 2026-04-30
+
+### Changed
+
+- **熔断器按路由粒度隔离**：`CircuitBreakerWithConfig` 从全局单例改为按路由维护独立的熔断器实例
+  - 使用 `sync.Map` + `LoadOrStore` 懒创建，路由 key 优先取 `c.FullPath()`（Gin 注册模板），避免高基数
+  - 一个慢接口的错误率不再影响其他接口的熔断状态
+  - 对标 Go-Zero 的按路由熔断设计
+
+---
+
 ## [3.7.1] - 2026-04-30
 
 ### Fixed
