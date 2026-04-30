@@ -2,6 +2,14 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.6.3] - 2026-04-30
+
+### Added
+
+- **JWT 环境变量注入**：新增 `THINKGIN_APP_JWT_SECRET` 和 `THINKGIN_APP_JWT_EXPIRE` 环境变量覆盖，确保 JWT 密钥可通过环境变量安全注入，无需写入配置文件
+
+---
+
 ## [3.6.2] - 2026-04-30
 
 ### Fixed

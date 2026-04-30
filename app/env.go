@@ -56,6 +56,14 @@ func applyEnvOverrides() {
 		Config.Log.File.Filename = v
 	}
 
+	// JWT（敏感信息，强烈建议通过环境变量注入而非写入配置文件）
+	if v := os.Getenv(envPrefix + "APP_JWT_SECRET"); v != "" {
+		Config.App.JWT.Secret = v
+	}
+	if v := getenvInt(envPrefix + "APP_JWT_EXPIRE"); v != nil {
+		Config.App.JWT.Expire = *v
+	}
+
 	// Prometheus 总开关与路径
 	if v := getenvBool(envPrefix + "APP_PROMETHEUS_ENABLED"); v != nil {
 		Config.App.Monitoring.PrometheusEnabled = *v
