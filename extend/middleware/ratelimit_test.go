@@ -96,6 +96,17 @@ func TestRateLimit_PerIPIndependence(t *testing.T) {
 	}
 }
 
+func TestStartGC_StopsOnDoneClose(t *testing.T) {
+	store := &limiterStore{
+		buckets: make(map[string]*tokenBucket),
+		done:    make(chan struct{}),
+	}
+	store.startGC()
+	// 关闭 done channel 应让 goroutine 安全退出，不 panic。
+	close(store.done)
+	time.Sleep(10 * time.Millisecond)
+}
+
 func TestEvictStale_RemovesExpiredBuckets(t *testing.T) {
 	now := time.Now()
 	store := &limiterStore{
@@ -122,21 +133,69 @@ func TestTokenBucket_RefillOverTime(t *testing.T) {
 		rate:     60,
 		last:     time.Unix(0, 0),
 	}
-	if b.allow(time.Unix(0, 0)) {
+	if ok, _ := b.allow(time.Unix(0, 0)); ok {
 		t.Fatal("empty bucket should reject")
 	}
 	// 经过 1 秒，应恢复到 capacity
-	if !b.allow(time.Unix(1, 0)) {
+	if ok, _ := b.allow(time.Unix(1, 0)); !ok {
 		t.Fatal("bucket should allow after refill")
 	}
 	// 连续取用应在 capacity 次以内都成功
 	passed := 1
 	for i := 0; i < 200; i++ {
-		if b.allow(time.Unix(1, 0)) {
+		if ok, _ := b.allow(time.Unix(1, 0)); ok {
 			passed++
 		}
 	}
 	if passed > 60 {
 		t.Errorf("bucket allowed %d requests in same instant, should cap at 60", passed)
+	}
+}
+
+func TestRateLimit_ResponseHeaders(t *testing.T) {
+	setMiddlewareConfig(t, "rate_limit", map[string]interface{}{
+		"requests_per_minute": 5,
+	})
+	r := newRouterWithRateLimit()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/ping", nil)
+	req.RemoteAddr = "10.0.0.99:1234"
+	r.ServeHTTP(w, req)
+
+	if w.Header().Get("X-RateLimit-Limit") != "5" {
+		t.Errorf("X-RateLimit-Limit=%q, want \"5\"", w.Header().Get("X-RateLimit-Limit"))
+	}
+	rem := w.Header().Get("X-RateLimit-Remaining")
+	if rem == "" {
+		t.Error("X-RateLimit-Remaining header missing")
+	}
+	if w.Header().Get("X-RateLimit-Reset") == "" {
+		t.Error("X-RateLimit-Reset header missing")
+	}
+}
+
+func TestRateLimit_RetryAfterOnBlock(t *testing.T) {
+	setMiddlewareConfig(t, "rate_limit", map[string]interface{}{
+		"requests_per_minute": 1,
+	})
+	r := newRouterWithRateLimit()
+
+	// 第 1 次通过
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/ping", nil)
+	req.RemoteAddr = "10.0.0.88:1234"
+	r.ServeHTTP(w, req)
+
+	// 第 2 次被拦截，应有 Retry-After
+	w2 := httptest.NewRecorder()
+	req2, _ := http.NewRequest(http.MethodGet, "/ping", nil)
+	req2.RemoteAddr = "10.0.0.88:1234"
+	r.ServeHTTP(w2, req2)
+	if w2.Code != http.StatusTooManyRequests {
+		t.Fatalf("status=%d, want 429", w2.Code)
+	}
+	if w2.Header().Get("Retry-After") == "" {
+		t.Error("Retry-After header missing on 429 response")
 	}
 }

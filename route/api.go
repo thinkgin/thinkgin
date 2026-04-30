@@ -12,6 +12,8 @@ import (
 func RegisterAPIRoutes(r *gin.Engine) {
 	api := r.Group("/api")
 	api.Use(middleware.APIErrorHandler())
+	// 从 middleware.groups.api 配置读取并挂载分组中间件。
+	ApplyGroupMiddleware(api, "api")
 
 	v1 := api.Group("/v1")
 	registerIndexAPIV1(v1)

@@ -2,6 +2,25 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.3.5] - 2026-04-30
+
+### Fixed
+
+- RateLimit GC goroutine 无法停止的泄漏：新增 `done` channel，支持 `close(done)` 安全退出
+- 清理仓库中残留的覆盖率产物文件（cov_mw, cov_mw.out 等）
+
+### Added
+
+- RateLimit 标准限流响应头：`X-RateLimit-Limit` / `X-RateLimit-Remaining` / `X-RateLimit-Reset` / `Retry-After`
+- 分组中间件生效：新增 `ApplyGroupMiddleware(group, name)` 函数，从 `middleware.groups` 配置读取并批量挂载
+- `resolveMiddleware()` 统一中间件名到 HandlerFunc 的映射，供全局和分组共用
+- API 路由组自动应用 `middleware.groups.api` 配置
+- Prometheus `/metrics` 端点 Basic Auth 配置示例（`prometheus.auth`）
+- 新增 `TestStartGC_StopsOnDoneClose` / `TestRateLimit_ResponseHeaders` / `TestRateLimit_RetryAfterOnBlock` 测试
+- 新增 `TestResolveMiddleware_*` / `TestApplyGroupMiddleware_*` 测试
+
+---
+
 ## [3.3.4] - 2026-04-25
 
 ### Changed

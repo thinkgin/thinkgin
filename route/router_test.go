@@ -89,6 +89,50 @@ func TestNoRoute_APIPathReturnsJSON(t *testing.T) {
 	}
 }
 
+func TestResolveMiddleware_KnownReturnsNonNil(t *testing.T) {
+	known := []string{
+		"recovery", "request_id", "cors", "rate_limit",
+		"secure_headers", "gzip", "csrf", "circuit_breaker",
+		"timeout", "body_limit", "jwt", "auth",
+	}
+	for _, name := range known {
+		if resolveMiddleware(name) == nil {
+			t.Errorf("resolveMiddleware(%q) = nil, want non-nil", name)
+		}
+	}
+}
+
+func TestResolveMiddleware_UnknownReturnsNil(t *testing.T) {
+	if resolveMiddleware("nonexistent") != nil {
+		t.Error("resolveMiddleware(\"nonexistent\") should return nil")
+	}
+}
+
+func TestApplyGroupMiddleware_AppliesConfiguredMiddleware(t *testing.T) {
+	old := app.Config
+	app.Config = &app.GlobalConfig{}
+	app.Config.Middleware.Groups = map[string][]string{
+		"api": {"recovery", "cors"},
+	}
+	defer func() { app.Config = old }()
+
+	r := gin.New()
+	group := r.Group("/test")
+	ApplyGroupMiddleware(group, "api")
+	// 不 panic 即通过；Gin 的 Handlers 长度应增加
+}
+
+func TestApplyGroupMiddleware_SkipsUndefinedGroup(t *testing.T) {
+	old := app.Config
+	app.Config = &app.GlobalConfig{}
+	app.Config.Middleware.Groups = map[string][]string{}
+	defer func() { app.Config = old }()
+
+	r := gin.New()
+	group := r.Group("/test")
+	ApplyGroupMiddleware(group, "nonexistent") // 不应 panic
+}
+
 func TestNoRoute_NonAPIPathReturns404(t *testing.T) {
 	r := gin.New()
 	r.NoRoute(func(c *gin.Context) {

@@ -26,3 +26,10 @@ prometheus:
     # 业务指标：middleware.BusinessCounter / BusinessHistogram / BusinessGauge
     business:
       enabled: true
+
+  # /metrics 端点 Basic Auth 鉴权（生产环境强烈建议启用）。
+  # 启用后，Prometheus 采集器的 scrape_configs 需要配置对应的 basic_auth。
+  auth:
+    enabled: false
+    username: "prom"
+    password: "changeme"

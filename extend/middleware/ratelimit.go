@@ -9,10 +9,18 @@
 //
 // 内存保护：后台 goroutine 每 bucketGCInterval 清理一次超过 bucketTTL
 // 未被访问的桶，避免海量 IP 导致内存无限膨胀。
+// goroutine 通过 done channel 可在进程退出时安全停止。
+//
+// 响应头：每个请求都会写入标准限流头，方便客户端做自适应退避：
+//   - X-RateLimit-Limit:     每分钟配额上限
+//   - X-RateLimit-Remaining: 当前窗口剩余次数
+//   - X-RateLimit-Reset:     令牌桶恢复满额的 Unix 秒时间戳
 package middleware
 
 import (
+	"math"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -36,7 +44,8 @@ type tokenBucket struct {
 	last     time.Time // 上次填充令牌的时间
 }
 
-func (b *tokenBucket) allow(now time.Time) bool {
+// allow 尝试消费一个令牌，返回是否放行和当前剩余令牌数（向下取整）。
+func (b *tokenBucket) allow(now time.Time) (bool, int) {
 	elapsed := now.Sub(b.last).Seconds()
 	if elapsed > 0 {
 		b.tokens += elapsed * b.rate
@@ -47,15 +56,25 @@ func (b *tokenBucket) allow(now time.Time) bool {
 	}
 	if b.tokens >= 1 {
 		b.tokens -= 1
-		return true
+		return true, int(b.tokens)
 	}
-	return false
+	return false, 0
+}
+
+// resetUnix 返回令牌桶恢复满额的 Unix 时间戳。
+func (b *tokenBucket) resetUnix() int64 {
+	deficit := float64(b.capacity) - b.tokens
+	if deficit <= 0 {
+		return b.last.Unix()
+	}
+	return b.last.Add(time.Duration(math.Ceil(deficit/b.rate)) * time.Second).Unix()
 }
 
 type limiterStore struct {
 	mu      sync.Mutex
 	buckets map[string]*tokenBucket
 	cfg     rateLimitConfig
+	done    chan struct{}
 }
 
 // evictStale 删除所有超过 bucketTTL 未被访问的桶。
@@ -67,6 +86,22 @@ func (s *limiterStore) evictStale(now time.Time) {
 			delete(s.buckets, ip)
 		}
 	}
+}
+
+// startGC 启动后台清理 goroutine，可通过 close(done) 安全退出。
+func (s *limiterStore) startGC() {
+	go func() {
+		ticker := time.NewTicker(bucketGCInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-s.done:
+				return
+			case t := <-ticker.C:
+				s.evictStale(t)
+			}
+		}
+	}()
 }
 
 type rateLimitConfig struct {
@@ -82,16 +117,13 @@ func RateLimit() gin.HandlerFunc {
 	store := &limiterStore{
 		buckets: make(map[string]*tokenBucket),
 		cfg:     cfg,
+		done:    make(chan struct{}),
 	}
 
 	// 后台 goroutine 定期清理不活跃的 IP 桶，防止内存泄漏。
-	go func() {
-		ticker := time.NewTicker(bucketGCInterval)
-		defer ticker.Stop()
-		for t := range ticker.C {
-			store.evictStale(t)
-		}
-	}()
+	store.startGC()
+
+	limitStr := strconv.Itoa(cfg.RequestsPerMinute)
 
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
@@ -108,10 +140,17 @@ func RateLimit() gin.HandlerFunc {
 			}
 			store.buckets[ip] = b
 		}
-		allowed := b.allow(now)
+		allowed, remaining := b.allow(now)
+		resetAt := b.resetUnix()
 		store.mu.Unlock()
 
+		// 标准限流响应头，无论是否被限流都写入，方便客户端自适应。
+		c.Header("X-RateLimit-Limit", limitStr)
+		c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
+		c.Header("X-RateLimit-Reset", strconv.FormatInt(resetAt, 10))
+
 		if !allowed {
+			c.Header("Retry-After", strconv.FormatInt(resetAt-now.Unix(), 10))
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
 				"code":    http.StatusTooManyRequests,
 				"message": "too many requests",

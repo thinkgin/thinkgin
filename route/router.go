@@ -65,43 +65,71 @@ func registerGlobalMiddleware(r *gin.Engine, cfg *app.GlobalConfig) {
 	}
 }
 
-// applyMiddleware 将单个中间件名映射到具体实现。
+// ApplyGroupMiddleware 按组名从 middleware.groups 配置中读取中间件列表，批量挂载到指定路由组。
+// 配置中未定义的组名时不做任何操作，方便业务代码无缝调用。
+func ApplyGroupMiddleware(group *gin.RouterGroup, groupName string) {
+	cfg := app.GetConfig()
+	if cfg == nil {
+		return
+	}
+	names, ok := cfg.Middleware.Groups[groupName]
+	if !ok || len(names) == 0 {
+		return
+	}
+	for _, name := range names {
+		if h := resolveMiddleware(name); h != nil {
+			group.Use(h)
+		}
+	}
+}
+
+// applyMiddleware 将单个中间件名映射到具体实现并注册到引擎。
 // 未知名称被静默忽略，方便前向兼容。
 func applyMiddleware(r *gin.Engine, name string) {
+	if h := resolveMiddleware(name); h != nil {
+		r.Use(h)
+	}
+}
+
+// resolveMiddleware 将中间件名解析为具体的 HandlerFunc。
+// 未知名称返回 nil，方便前向兼容。
+func resolveMiddleware(name string) gin.HandlerFunc {
 	switch name {
 	case "recovery":
-		r.Use(middleware.Recovery())
+		return middleware.Recovery()
 	case "request_id":
-		r.Use(middleware.RequestID())
+		return middleware.RequestID()
 	case "trace":
-		r.Use(middleware.TraceMiddleware())
+		return middleware.TraceMiddleware()
 	case "logger", "access_log":
-		r.Use(middleware.AccessLogger())
+		return middleware.AccessLogger()
 	case "cors":
-		r.Use(middleware.CORS())
+		return middleware.CORS()
 	case "rate_limit":
-		r.Use(middleware.RateLimit())
+		return middleware.RateLimit()
 	case "session":
-		r.Use(session.Middleware())
-	case "jwt", "jwt_auth":
-		r.Use(middleware.JWTAuth())
+		return session.Middleware()
+	case "jwt", "jwt_auth", "auth":
+		return middleware.JWTAuth()
 	case "prometheus":
 		middleware.InitPrometheusMetrics()
-		r.Use(middleware.PrometheusMiddleware())
+		return middleware.PrometheusMiddleware()
 	case "secure_headers":
-		r.Use(middleware.SecureHeaders())
+		return middleware.SecureHeaders()
 	case "gzip":
-		r.Use(middleware.Gzip())
+		return middleware.Gzip()
 	case "csrf":
-		r.Use(middleware.CSRF())
+		return middleware.CSRF()
 	case "redis_rate_limit":
-		r.Use(middleware.RedisRateLimit())
+		return middleware.RedisRateLimit()
 	case "circuit_breaker":
-		r.Use(middleware.CircuitBreaker())
+		return middleware.CircuitBreaker()
 	case "timeout":
-		r.Use(middleware.Timeout())
+		return middleware.Timeout()
 	case "body_limit":
-		r.Use(middleware.BodyLimit())
+		return middleware.BodyLimit()
+	default:
+		return nil
 	}
 }
 
