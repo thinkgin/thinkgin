@@ -2,7 +2,7 @@ openapi: "3.0.3"
 info:
   title: ThinkGin API
   description: ThinkGin 框架示例 API 文档
-  version: "3.6.0"
+  version: "3.7.0"
   contact:
     name: ThinkGin Team
     url: https://github.com/thinkgin/thinkgin
@@ -33,7 +33,7 @@ paths:
                     example: pong
                   version:
                     type: string
-                    example: "3.6.0"
+                    example: "3.7.0"
 
   /livez:
     get:
@@ -60,21 +60,130 @@ paths:
       summary: 示例接口
       operationId: indexHello
       tags: [Index]
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: 可选的名字参数
       responses:
         "200":
           description: 成功
           content:
             application/json:
               schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "429":
+          description: 请求过于频繁
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: ok
+        data:
+          type: object
+        request_id:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务错误码
+          example: 400000
+        message:
+          type: string
+          example: 请求参数错误
+        request_id:
+          type: string
+        data:
+          type: object
+          nullable: true
+
+    ValidationError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 422000
+        message:
+          type: string
+          example: 参数校验失败
+        request_id:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: email
+              tag:
+                type: string
+                example: required
+              message:
+                type: string
+                example: email 为必填项
+
+    PaginatedResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: ok
+        data:
+          type: object
+          properties:
+            list:
+              type: array
+              items:
                 type: object
-                properties:
-                  code:
-                    type: integer
-                    example: 200
-                  message:
-                    type: string
-                    example: ok
-                  data:
-                    type: object
-                  request_id:
-                    type: string
+            total:
+              type: integer
+              example: 100
+            page:
+              type: integer
+              example: 1
+            page_size:
+              type: integer
+              example: 20
+            total_pages:
+              type: integer
+              example: 5
+        request_id:
+          type: string
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: 页码
+    PageSizeParam:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: 每页数量
