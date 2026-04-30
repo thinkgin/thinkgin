@@ -2,6 +2,20 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.7.0] - 2026-04-30
+
+### Changed
+
+- **配置热更新并发安全**：全局 `Config` 改为 `atomic.Pointer[GlobalConfig]` 原子指针
+  - `GetConfig()` 使用原子读取，线程安全
+  - 新增 `SetConfig(cfg)` 原子写入函数
+  - 热更新 `reload()` 改为"构建新对象→原子替换"模式，消除读写竞态
+  - `defaults.go` / `env.go` / `validate.go` 提取参数化版本（`setDefaultsOn` / `applyEnvOverridesOn` / `validateConfigOn`）
+  - `loader.go` 新增 `loadNewConfigFromDir()` 构建独立配置对象
+  - 旧 `app.Config` 变量保留为 Deprecated 兼容入口
+
+---
+
 ## [3.6.3] - 2026-04-30
 
 ### Added

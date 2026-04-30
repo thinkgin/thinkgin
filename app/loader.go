@@ -13,7 +13,7 @@ import (
 // defaultConfigDir 是相对工作目录的默认配置根。
 const defaultConfigDir = "config"
 
-// LoadConfigFromDir 读取指定目录下的 13 份 YAML 并填充到 Config。
+// LoadConfigFromDir 读取指定目录下的 13 份 YAML 并填充到全局 Config。
 // 单个文件加载失败会记录错误但不中断整体流程，使用默认值兜底。
 // 返回聚合错误（非空时表示部分文件加载失败，但配置仍可使用）。
 func LoadConfigFromDir(dir string) error {
@@ -54,6 +54,41 @@ func LoadConfigFromDir(dir string) error {
 // LoadConfig 为了向后兼容保留，使用默认目录。
 func LoadConfig() {
 	_ = LoadConfigFromDir(defaultConfigDir)
+}
+
+// loadNewConfigFromDir 构建一个全新的 GlobalConfig 对象并加载指定目录的 YAML。
+// 与 LoadConfigFromDir 不同，本函数不修改全局变量，适用于热更新的"构建-替换"模式。
+func loadNewConfigFromDir(dir string) (*GlobalConfig, error) {
+	cfg := &GlobalConfig{}
+
+	loaders := []struct {
+		file string
+		fn   func(string) error
+	}{
+		{"app.yaml", func(p string) error { return loadInto("app", p, &cfg.App) }},
+		{"server.yaml", func(p string) error { return loadInto("server", p, &cfg.Server) }},
+		{"database.yaml", func(p string) error { return loadInto("database", p, &cfg.Database) }},
+		{"cache.yaml", func(p string) error { return loadInto("cache", p, &cfg.Cache) }},
+		{"log.yaml", func(p string) error { return loadInto("log", p, &cfg.Log) }},
+		{"session.yaml", func(p string) error { return loadInto("session", p, &cfg.Session) }},
+		{"middleware.yaml", func(p string) error { return loadInto("middleware", p, &cfg.Middleware) }},
+		{"route.yaml", func(p string) error { return loadInto("route", p, &cfg.Route) }},
+		{"view.yaml", func(p string) error { return loadInto("view", p, &cfg.View) }},
+		{"filesystem.yaml", func(p string) error { return loadInto("filesystem", p, &cfg.Filesystem) }},
+		{"lang.yaml", func(p string) error { return loadInto("lang", p, &cfg.Lang) }},
+		{"trace.yaml", func(p string) error { return loadInto("trace", p, &cfg.Trace) }},
+		{"prometheus.yaml", func(p string) error { return loadInto("prometheus", p, &cfg.Prometheus) }},
+	}
+
+	var errs []error
+	for _, l := range loaders {
+		path := filepath.Join(dir, l.file)
+		if err := l.fn(path); err != nil {
+			errs = append(errs, fmt.Errorf("%s: %w", l.file, err))
+		}
+	}
+
+	return cfg, errors.Join(errs...)
 }
 
 // loadInto 把 YAML 文件反序列化到 *T。

@@ -105,12 +105,14 @@ func (cw *ConfigWatcher) reload() {
 	cw.mu.Lock()
 	defer cw.mu.Unlock()
 
-	_ = LoadConfigFromDir(cw.configDir)
-	applyEnvOverrides()
-	setDefaultConfig()
-	validateConfig()
+	// 构建全新的 GlobalConfig 对象，在新对象上完成所有变更，
+	// 最后原子替换全局指针，保证读取方永远看到一致的配置快照。
+	cfg, _ := loadNewConfigFromDir(cw.configDir)
+	applyEnvOverridesOn(cfg)
+	setDefaultsOn(cfg)
+	validateConfigOn(cfg)
+	SetConfig(cfg)
 
-	cfg := GetConfig()
 	for _, cb := range cw.callbacks {
 		cb(cfg)
 	}

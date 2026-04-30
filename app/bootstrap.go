@@ -29,6 +29,8 @@ func Bootstrap(configDir string) error {
 	applyEnvOverrides()
 	setDefaultConfig()
 	validateConfig()
+	// 将配置写入原子指针，保证后续 GetConfig() 线程安全读取。
+	SetConfig(Config)
 	InitLogger()
 
 	return loadErr

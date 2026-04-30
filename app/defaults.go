@@ -1,71 +1,76 @@
 package app
 
-// setDefaultConfig 为缺省字段填充安全的默认值。
+// setDefaultConfig 为全局 Config 的缺省字段填充安全的默认值。
 // 仅在"值为零值"时写入，不覆盖 YAML / 环境变量已设置的内容。
 func setDefaultConfig() {
 	if Config == nil {
 		Config = &GlobalConfig{}
 	}
+	setDefaultsOn(Config)
+}
 
+// setDefaultsOn 为指定 cfg 的缺省字段填充安全的默认值。
+// 热更新路径使用此函数操作新配置对象，避免修改全局变量。
+func setDefaultsOn(cfg *GlobalConfig) {
 	// 应用元信息
-	if Config.App.Name == "" {
-		Config.App.Name = "ThinkGin"
+	if cfg.App.Name == "" {
+		cfg.App.Name = "ThinkGin"
 	}
-	if Config.App.Version == "" {
-		Config.App.Version = "3.6.3"
+	if cfg.App.Version == "" {
+		cfg.App.Version = "3.7.0"
 	}
 
 	// HTTP 服务
-	if Config.Server.HTTP.Host == "" {
-		Config.Server.HTTP.Host = "0.0.0.0"
+	if cfg.Server.HTTP.Host == "" {
+		cfg.Server.HTTP.Host = "0.0.0.0"
 	}
-	if Config.Server.HTTP.Port == 0 {
-		Config.Server.HTTP.Port = 8000
+	if cfg.Server.HTTP.Port == 0 {
+		cfg.Server.HTTP.Port = 8000
 	}
-	if Config.Server.HTTP.ReadTimeout == 0 {
-		Config.Server.HTTP.ReadTimeout = 60
+	if cfg.Server.HTTP.ReadTimeout == 0 {
+		cfg.Server.HTTP.ReadTimeout = 60
 	}
-	if Config.Server.HTTP.WriteTimeout == 0 {
-		Config.Server.HTTP.WriteTimeout = 60
+	if cfg.Server.HTTP.WriteTimeout == 0 {
+		cfg.Server.HTTP.WriteTimeout = 60
 	}
-	if Config.Server.HTTP.IdleTimeout == 0 {
-		Config.Server.HTTP.IdleTimeout = 120
+	if cfg.Server.HTTP.IdleTimeout == 0 {
+		cfg.Server.HTTP.IdleTimeout = 120
 	}
-	if Config.Server.HTTP.MaxHeaderBytes == 0 {
-		Config.Server.HTTP.MaxHeaderBytes = 1 << 20 // 1 MiB
+	if cfg.Server.HTTP.MaxHeaderBytes == 0 {
+		cfg.Server.HTTP.MaxHeaderBytes = 1 << 20 // 1 MiB
 	}
 
 	// 日志
-	if Config.Log.Default.Level == "" {
-		Config.Log.Default.Level = "info"
+	if cfg.Log.Default.Level == "" {
+		cfg.Log.Default.Level = "info"
 	}
-	if Config.Log.Default.Format == "" {
-		Config.Log.Default.Format = "json"
+	if cfg.Log.Default.Format == "" {
+		cfg.Log.Default.Format = "json"
 	}
-	if Config.Log.File.Path == "" {
-		Config.Log.File.Path = "runtime/log"
+	if cfg.Log.File.Path == "" {
+		cfg.Log.File.Path = "runtime/log"
 	}
-	if Config.Log.File.Filename == "" {
-		Config.Log.File.Filename = "system"
+	if cfg.Log.File.Filename == "" {
+		cfg.Log.File.Filename = "system"
 	}
-	if Config.Log.File.MaxAge == 0 {
-		Config.Log.File.MaxAge = 30
+	if cfg.Log.File.MaxAge == 0 {
+		cfg.Log.File.MaxAge = 30
 	}
-	if Config.Log.File.RotationTime == 0 {
-		Config.Log.File.RotationTime = 24
+	if cfg.Log.File.RotationTime == 0 {
+		cfg.Log.File.RotationTime = 24
 	}
 
 	// Prometheus
-	if Config.Prometheus.ServiceName == "" {
-		Config.Prometheus.ServiceName = "thinkgin"
+	if cfg.Prometheus.ServiceName == "" {
+		cfg.Prometheus.ServiceName = "thinkgin"
 	}
-	if Config.Prometheus.Path == "" {
-		Config.Prometheus.Path = "/metrics"
+	if cfg.Prometheus.Path == "" {
+		cfg.Prometheus.Path = "/metrics"
 	}
-	if Config.Prometheus.Namespace == "" {
-		Config.Prometheus.Namespace = "app"
+	if cfg.Prometheus.Namespace == "" {
+		cfg.Prometheus.Namespace = "app"
 	}
-	if Config.Prometheus.ScrapeInterval == 0 {
-		Config.Prometheus.ScrapeInterval = 15
+	if cfg.Prometheus.ScrapeInterval == 0 {
+		cfg.Prometheus.ScrapeInterval = 15
 	}
 }

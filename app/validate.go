@@ -7,74 +7,63 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// validateConfig 对已加载的配置做语义校验，非法值回退到安全默认值。
-// 为了脚手架的"零配置可跑"目标，校验失败不报错，只打印到标准输出。
+// validateConfig 对全局 Config 做语义校验，非法值回退到安全默认值。
 func validateConfig() {
 	if Config == nil {
 		return
 	}
-
-	validateServerMode()
-	validateHTTPHostPort()
-	validateLogLevel()
-	validateLogFormat()
-	validateLogPath()
+	validateConfigOn(Config)
 }
 
-// validateServerMode 将 mode 归一化为 gin 支持的三种值，无效值退化为 debug。
-func validateServerMode() {
-	mode := strings.ToLower(strings.TrimSpace(Config.Server.Mode))
+// validateConfigOn 对指定 cfg 做语义校验，非法值回退到安全默认值。
+// 热更新路径使用此函数操作新配置对象，避免修改全局变量。
+// 为了脚手架的"零配置可跑"目标，校验失败不报错，只打印到标准输出。
+func validateConfigOn(cfg *GlobalConfig) {
+	// server.mode
+	mode := strings.ToLower(strings.TrimSpace(cfg.Server.Mode))
 	switch mode {
 	case "":
-		Config.Server.Mode = "debug"
+		cfg.Server.Mode = "debug"
 	case "debug", "test", "release":
-		Config.Server.Mode = mode
+		cfg.Server.Mode = mode
 	default:
-		fmt.Printf("[config] 无效的 server.mode: %q，已回退为 debug\n", Config.Server.Mode)
-		Config.Server.Mode = "debug"
+		fmt.Printf("[config] 无效的 server.mode: %q，已回退为 debug\n", cfg.Server.Mode)
+		cfg.Server.Mode = "debug"
 	}
-}
 
-// validateHTTPHostPort 校验 HTTP 监听地址与端口的合法性。
-func validateHTTPHostPort() {
-	if Config.Server.HTTP.Host == "" {
-		Config.Server.HTTP.Host = "0.0.0.0"
+	// server.http.host / port
+	if cfg.Server.HTTP.Host == "" {
+		cfg.Server.HTTP.Host = "0.0.0.0"
 	}
-	if Config.Server.HTTP.Port <= 0 || Config.Server.HTTP.Port > 65535 {
-		fmt.Printf("[config] 无效的 server.http.port: %d，已回退为 8000\n", Config.Server.HTTP.Port)
-		Config.Server.HTTP.Port = 8000
+	if cfg.Server.HTTP.Port <= 0 || cfg.Server.HTTP.Port > 65535 {
+		fmt.Printf("[config] 无效的 server.http.port: %d，已回退为 8000\n", cfg.Server.HTTP.Port)
+		cfg.Server.HTTP.Port = 8000
 	}
-}
 
-// validateLogLevel 确保日志级别能被 logrus 识别。
-func validateLogLevel() {
-	level := strings.ToLower(strings.TrimSpace(Config.Log.Default.Level))
+	// log.default.level
+	level := strings.ToLower(strings.TrimSpace(cfg.Log.Default.Level))
 	if _, err := logrus.ParseLevel(level); err != nil {
-		fmt.Printf("[config] 无效的 log.default.level: %q，已回退为 info\n", Config.Log.Default.Level)
-		Config.Log.Default.Level = "info"
+		fmt.Printf("[config] 无效的 log.default.level: %q，已回退为 info\n", cfg.Log.Default.Level)
+		cfg.Log.Default.Level = "info"
 	}
-}
 
-// validateLogFormat 只接受 json / text 两种格式。
-func validateLogFormat() {
-	format := strings.ToLower(strings.TrimSpace(Config.Log.Default.Format))
+	// log.default.format
+	format := strings.ToLower(strings.TrimSpace(cfg.Log.Default.Format))
 	switch format {
 	case "":
-		Config.Log.Default.Format = "json"
+		cfg.Log.Default.Format = "json"
 	case "json", "text":
-		Config.Log.Default.Format = format
+		cfg.Log.Default.Format = format
 	default:
-		fmt.Printf("[config] 无效的 log.default.format: %q，已回退为 json\n", Config.Log.Default.Format)
-		Config.Log.Default.Format = "json"
+		fmt.Printf("[config] 无效的 log.default.format: %q，已回退为 json\n", cfg.Log.Default.Format)
+		cfg.Log.Default.Format = "json"
 	}
-}
 
-// validateLogPath 保证落盘路径与文件名不为空。
-func validateLogPath() {
-	if Config.Log.File.Path == "" {
-		Config.Log.File.Path = "runtime/log"
+	// log.file.path / filename
+	if cfg.Log.File.Path == "" {
+		cfg.Log.File.Path = "runtime/log"
 	}
-	if Config.Log.File.Filename == "" {
-		Config.Log.File.Filename = "system"
+	if cfg.Log.File.Filename == "" {
+		cfg.Log.File.Filename = "system"
 	}
 }
