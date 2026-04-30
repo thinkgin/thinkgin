@@ -2,14 +2,12 @@ package app
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
-	"runtime"
-	"time"
 
-	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
-	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // Log 是进程级的全局 Logger 单例（Logger 接口）。
@@ -27,9 +25,9 @@ func GetLogger() Logger {
 
 // InitLogger 根据已加载的 LogConfig 初始化全局 Logger，包括：
 //   - 级别与格式（json/text）
-//   - 按天轮转的文件输出（通过 lfshook + file-rotatelogs）
+//   - 基于 lumberjack 的日志文件按大小轮转与保留策略
 //
-// 目录创建或轮转器构造失败时，退化为仅输出到 stderr，不阻塞启动。
+// 目录创建失败时，退化为仅输出到 stderr，不阻塞启动。
 func InitLogger() {
 	l := logrus.New()
 
@@ -43,15 +41,13 @@ func InitLogger() {
 
 	writer, err := newRotator()
 	if err != nil {
-		fmt.Printf("[logger] 初始化文件轮转器失败: %v\n", err)
+		fmt.Printf("[logger] 初始化日志文件失败: %v\n", err)
 		Log = NewLogrusAdapter(l)
 		return
 	}
 
-	l.AddHook(lfshook.NewHook(
-		allLevelWriterMap(writer),
-		l.Formatter,
-	))
+	// 同时输出到 stderr 和日志文件，便于容器环境下 stdout 采集。
+	l.SetOutput(io.MultiWriter(os.Stderr, writer))
 	Log = NewLogrusAdapter(l)
 }
 
@@ -65,35 +61,21 @@ func newFormatter(format string) logrus.Formatter {
 	return &logrus.TextFormatter{TimestampFormat: ts}
 }
 
-// newRotator 创建按天切分的日志文件 Writer，带软链指向最新文件。
-func newRotator() (*rotatelogs.RotateLogs, error) {
+// newRotator 创建基于 lumberjack 的日志文件 Writer。
+// lumberjack 自动按文件大小轮转、保留指定天数、压缩旧文件，且跨平台稳定。
+func newRotator() (*lumberjack.Logger, error) {
 	logPath := Config.Log.File.Path
 	if err := os.MkdirAll(logPath, 0o755); err != nil {
 		return nil, fmt.Errorf("创建日志目录失败: %w", err)
 	}
 
-	base := filepath.Join(logPath, Config.Log.File.Filename)
-	opts := []rotatelogs.Option{
-		rotatelogs.WithMaxAge(time.Duration(Config.Log.File.MaxAge) * 24 * time.Hour),
-		rotatelogs.WithRotationTime(time.Duration(Config.Log.File.RotationTime) * time.Hour),
-	}
-	// Windows 普通用户无 SeCreateSymbolicLinkPrivilege 权限，创建软链会失败。
-	// 在非 Windows 平台才启用 WithLinkName，保持"最新日志"的便捷软链。
-	if runtime.GOOS != "windows" {
-		opts = append(opts, rotatelogs.WithLinkName(base+".log"))
-	}
-	return rotatelogs.New(base+".%Y%m%d.log", opts...)
-}
-
-// allLevelWriterMap 把同一个 writer 绑定到 logrus 全部日志级别，
-// 避免调用方手工维护级别映射表。
-func allLevelWriterMap(w *rotatelogs.RotateLogs) lfshook.WriterMap {
-	return lfshook.WriterMap{
-		logrus.DebugLevel: w,
-		logrus.InfoLevel:  w,
-		logrus.WarnLevel:  w,
-		logrus.ErrorLevel: w,
-		logrus.FatalLevel: w,
-		logrus.PanicLevel: w,
-	}
+	filename := filepath.Join(logPath, Config.Log.File.Filename+".log")
+	return &lumberjack.Logger{
+		Filename:   filename,
+		MaxSize:    100, // MB，单文件最大 100MB
+		MaxAge:     Config.Log.File.MaxAge,
+		MaxBackups: 30,
+		LocalTime:  true,
+		Compress:   true,
+	}, nil
 }

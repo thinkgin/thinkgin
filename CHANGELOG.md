@@ -2,6 +2,18 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.8.0] - 2026-04-30
+
+### Changed
+
+- **日志轮转替换为 lumberjack**：移除已归档的 `lestrrat-go/file-rotatelogs` 和 `rifflock/lfshook`
+  - 使用 `gopkg.in/natefinch/lumberjack.v2` 替代，按文件大小（100MB）轮转 + 自动压缩旧文件
+  - 保留 `MaxAge`（天数）配置项语义不变
+  - 日志同时输出到 stderr 和文件（`io.MultiWriter`），便于容器环境采集
+  - 跨平台稳定，不再需要 Windows symlink 特殊处理
+
+---
+
 ## [3.7.2] - 2026-04-30
 
 ### Changed
