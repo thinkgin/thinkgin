@@ -27,6 +27,41 @@ import (
 // ErrNotFound 在按名称获取 store 而不存在时返回。
 var ErrNotFound = errors.New("cache: store not found")
 
+// ErrCacheMiss 在 Store.Get 未命中缓存时返回。
+var ErrCacheMiss = errors.New("cache: miss")
+
+// NewStore 根据缓存名称创建统一的 Store 接口。
+// driver=redis 时复用已建立的连接；driver=memory 或其他则返回内存实现。
+func NewStore(name string) Store {
+	cfg := app.GetConfig()
+
+	// 尝试从配置中获取 driver 信息
+	if cfg != nil {
+		if raw, ok := cfg.Cache.Stores[name]; ok {
+			if m, ok := raw.(map[string]interface{}); ok {
+				if driver, _ := m["driver"].(string); driver == "redis" {
+					if client, err := Get(name); err == nil {
+						prefix := cfg.Cache.Prefix
+						return NewRedisStore(client, prefix)
+					}
+				}
+			}
+		}
+	}
+
+	// 默认回退到内存实现
+	return NewMemoryStore()
+}
+
+// DefaultStore 返回 config.cache.default 指向的 Store 接口。
+func DefaultStore() Store {
+	cfg := app.GetConfig()
+	if cfg != nil && cfg.Cache.Default != "" {
+		return NewStore(cfg.Cache.Default)
+	}
+	return NewMemoryStore()
+}
+
 // pingTimeout 限定 Init 阶段 Ping 的最大耗时，避免 Redis 不可达时阻塞启动。
 const pingTimeout = 2 * time.Second
 

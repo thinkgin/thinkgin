@@ -2,7 +2,7 @@ openapi: "3.0.3"
 info:
   title: ThinkGin API
   description: ThinkGin 框架示例 API 文档
-  version: "3.4.0"
+  version: "3.5.0"
   contact:
     name: ThinkGin Team
     url: https://github.com/thinkgin/thinkgin
@@ -33,7 +33,7 @@ paths:
                     example: pong
                   version:
                     type: string
-                    example: "3.4.0"
+                    example: "3.5.0"
 
   /livez:
     get:

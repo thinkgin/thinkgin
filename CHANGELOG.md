@@ -2,6 +2,31 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.5.0] - 2026-04-30
+
+### Added
+
+- **OTel OTLP 实际导出器**：`trace.go` 现支持三种 driver
+  - `stdout`（默认）：输出到 `runtime/log/trace.log`
+  - `otlp` / `jaeger`：通过 OTLP gRPC(4317) 或 HTTP(4318) 发送到 Jaeger/Tempo/SigNoz
+  - 根据 `trace.otel.use_grpc` 自动选择协议
+- **Cache 抽象层**：新增 `Store` 接口 + `MemoryStore` / `RedisStore` 双实现
+  - `Get` / `Set` / `Delete` / `Has` / `Remember` / `Flush` 统一 API
+  - `NewStore(name)` 工厂根据配置 driver 自动选择实现
+  - `DefaultStore()` 快捷获取默认缓存
+  - `MemoryStore` 含惰性删除 + 后台 GC，done channel 可安全退出
+- **Docker Compose 本地开发栈**：一键启动 MySQL + Redis + Jaeger + Prometheus
+  - `docker-compose.yml` + `docker/prometheus.yml` 采集配置
+  - 含健康检查、数据卷持久化
+
+### Changed
+
+- 升级 OTel 依赖到 v1.43.0（otel/sdk/trace/metric/contrib）
+- 升级 go-playground/validator 到 v10.30.2
+- 新增 `otlptracegrpc` / `otlptracehttp` / `grpc` 等依赖
+
+---
+
 ## [3.4.0] - 2026-04-30
 
 ### Added

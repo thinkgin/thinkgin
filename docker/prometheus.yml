@@ -1,0 +1,17 @@
+# Prometheus 采集配置（本地开发用）
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "thinkgin"
+    # 宿主机上运行的 ThinkGin 服务
+    # Windows/macOS: host.docker.internal
+    # Linux: 改为实际 IP 或使用 network_mode: host
+    static_configs:
+      - targets: ["host.docker.internal:8000"]
+    metrics_path: "/metrics"
+    # 如果 prometheus.auth.enabled=true，取消下面注释：
+    # basic_auth:
+    #   username: prom
+    #   password: changeme

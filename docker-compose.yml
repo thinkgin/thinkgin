@@ -1,0 +1,76 @@
+# ThinkGin 本地开发环境
+# 启动: docker compose up -d
+# 停止: docker compose down
+# 清空数据: docker compose down -v
+#
+# 服务端口映射:
+#   MySQL:      3306
+#   Redis:      6379
+#   Jaeger UI:  16686
+#   OTLP gRPC:  4317
+#   OTLP HTTP:  4318
+#   Prometheus: 9090
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: thinkgin-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: thinkgin
+      MYSQL_USER: thinkgin
+      MYSQL_PASSWORD: thinkgin
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: thinkgin-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: thinkgin-jaeger
+    restart: unless-stopped
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: thinkgin-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - jaeger
+
+volumes:
+  mysql_data:
+  redis_data:
