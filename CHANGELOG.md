@@ -2,6 +2,14 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.7.1] - 2026-04-30
+
+### Fixed
+
+- **LoadHTMLGlob 安全检查**：`registerStaticAndTemplates` 在调用 `LoadHTMLGlob` 前使用 `filepath.Glob` 检查是否有匹配的 `.html` 文件，纯 API 项目（无模板文件）不再 panic
+
+---
+
 ## [3.7.0] - 2026-04-30
 
 ### Changed

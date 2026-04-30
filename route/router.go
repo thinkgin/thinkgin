@@ -2,6 +2,8 @@
 package route
 
 import (
+	"path/filepath"
+
 	"github.com/gin-gonic/gin"
 
 	"thinkgin/app"
@@ -144,7 +146,11 @@ func registerStaticAndTemplates(r *gin.Engine) {
 	r.Static("/public", "./public")
 	r.Static("/uploads", "./public/uploads")
 	// 仅加载 .html 文件，避免把 .gitkeep、空目录或其他杂项当成模板。
-	r.LoadHTMLGlob("app/*/view/*.html")
+	// 先用 Glob 检查是否有匹配文件，纯 API 项目无模板时跳过，避免 panic。
+	const tplGlob = "app/*/view/*.html"
+	if matches, _ := filepath.Glob(tplGlob); len(matches) > 0 {
+		r.LoadHTMLGlob(tplGlob)
+	}
 }
 
 // registerMonitoringRoutes 注册 k8s 探针与 Prometheus 端点。
