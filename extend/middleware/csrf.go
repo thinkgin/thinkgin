@@ -12,6 +12,7 @@ package middleware
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"net/http"
 
@@ -54,7 +55,7 @@ func CSRF() gin.HandlerFunc {
 			requestToken = c.PostForm(csrfFormField)
 		}
 
-		if requestToken == "" || requestToken != cookieToken {
+		if requestToken == "" || subtle.ConstantTimeCompare([]byte(requestToken), []byte(cookieToken)) != 1 {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"code":    http.StatusForbidden,
 				"message": "CSRF token mismatch",

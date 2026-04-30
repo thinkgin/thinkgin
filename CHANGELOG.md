@@ -2,6 +2,14 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.6.1] - 2026-04-30
+
+### Fixed
+
+- **CSRF Token 时序攻击修复**：`csrf.go` 中 token 比较从 `!=` 改为 `crypto/subtle.ConstantTimeCompare`，防止时序攻击（Timing Attack）窃取 CSRF token
+
+---
+
 ## [3.6.0] - 2026-04-30
 
 ### Added
