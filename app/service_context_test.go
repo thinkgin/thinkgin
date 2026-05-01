@@ -1,6 +1,7 @@
 package app
 
 import (
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,7 +14,7 @@ func TestSvcMiddleware_InjectsServiceContext(t *testing.T) {
 
 	svc := &ServiceContext{
 		Config: &GlobalConfig{},
-		Log:    NewLogrusAdapter(nil),
+		Log:    NewSlogAdapter(slog.Default()),
 	}
 	svc.Config.App.Name = "SvcTest"
 

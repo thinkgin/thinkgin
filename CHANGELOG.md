@@ -2,6 +2,19 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.10.0] - 2026-05-01
+
+### Changed
+
+- **默认日志引擎从 logrus 切换为 slog**（REVIEW #11）：框架核心不再直接依赖 logrus
+  - `InitLogger()` 和 `GetLogger()` 改用标准库 `log/slog` 作为默认实现
+  - `validate.go` 中的 `logrus.ParseLevel()` 替换为自定义 `isValidLogLevel()` 函数
+  - `logrus_adapter.go` 保留为可选适配器，用户可通过 `app.Log = app.NewLogrusAdapter(...)` 显式启用
+  - 测试文件（`framework/app_test.go`、`service_context_test.go`）统一改用 `NewSlogAdapter`
+  - logrus 从框架启动路径中完全移除，仅作为 go.mod 间接依赖保留
+
+---
+
 ## [3.9.1] - 2026-05-01
 
 ### Fixed

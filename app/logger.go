@@ -3,10 +3,10 @@ package app
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 
-	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -14,11 +14,11 @@ import (
 // 通过 InitLogger 或 Bootstrap 填充；调用方统一使用 GetLogger 访问。
 var Log Logger
 
-// GetLogger 返回全局 Logger 接口。若尚未初始化，返回基于 logrus 标准实例的兜底，
+// GetLogger 返回全局 Logger 接口。若尚未初始化，返回基于 slog 标准实例的兜底，
 // 保证调用方永远不会拿到 nil（便于在早期 init 阶段写日志）。
 func GetLogger() Logger {
 	if Log == nil {
-		return NewLogrusAdapter(logrus.StandardLogger())
+		return NewSlogAdapter(slog.Default())
 	}
 	return Log
 }
@@ -27,38 +27,46 @@ func GetLogger() Logger {
 //   - 级别与格式（json/text）
 //   - 基于 lumberjack 的日志文件按大小轮转与保留策略
 //
+// 默认使用标准库 slog 作为日志引擎，无需第三方依赖。
+// 如需 logrus，可在应用启动后手动设置：app.Log = app.NewLogrusAdapter(...)
+//
 // 目录创建失败时，退化为仅输出到 stderr，不阻塞启动。
 func InitLogger() {
-	l := logrus.New()
-
-	level, err := logrus.ParseLevel(Config.Log.Default.Level)
-	if err != nil {
-		level = logrus.InfoLevel
-	}
-	l.SetLevel(level)
-
-	l.SetFormatter(newFormatter(Config.Log.Default.Format))
+	level := parseSlogLevel(Config.Log.Default.Level)
 
 	writer, err := newRotator()
 	if err != nil {
 		fmt.Printf("[logger] 初始化日志文件失败: %v\n", err)
-		Log = NewLogrusAdapter(l)
+		Log = NewSlogAdapter(slog.New(newSlogHandler(os.Stderr, level, Config.Log.Default.Format)))
 		return
 	}
 
 	// 同时输出到 stderr 和日志文件，便于容器环境下 stdout 采集。
-	l.SetOutput(io.MultiWriter(os.Stderr, writer))
-	Log = NewLogrusAdapter(l)
+	output := io.MultiWriter(os.Stderr, writer)
+	Log = NewSlogAdapter(slog.New(newSlogHandler(output, level, Config.Log.Default.Format)))
 }
 
-// newFormatter 按格式名返回对应的 logrus Formatter。
-// 非 json 一律视为 text，保持与 YAML 校验一致的语义。
-func newFormatter(format string) logrus.Formatter {
-	const ts = "2006-01-02 15:04:05"
+// newSlogHandler 根据格式创建 slog.Handler。
+func newSlogHandler(w io.Writer, level slog.Level, format string) slog.Handler {
+	opts := &slog.HandlerOptions{Level: level}
 	if format == "json" {
-		return &logrus.JSONFormatter{TimestampFormat: ts}
+		return slog.NewJSONHandler(w, opts)
 	}
-	return &logrus.TextFormatter{TimestampFormat: ts}
+	return slog.NewTextHandler(w, opts)
+}
+
+// parseSlogLevel 将配置字符串映射为 slog.Level。
+func parseSlogLevel(s string) slog.Level {
+	switch s {
+	case "debug", "trace":
+		return slog.LevelDebug
+	case "warn", "warning":
+		return slog.LevelWarn
+	case "error", "fatal", "panic":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }
 
 // newRotator 创建基于 lumberjack 的日志文件 Writer。

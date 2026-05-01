@@ -3,8 +3,6 @@ package app
 import (
 	"fmt"
 	"strings"
-
-	"github.com/sirupsen/logrus"
 )
 
 // validateConfig 对全局 Config 做语义校验，非法值回退到安全默认值。
@@ -42,7 +40,7 @@ func validateConfigOn(cfg *GlobalConfig) {
 
 	// log.default.level
 	level := strings.ToLower(strings.TrimSpace(cfg.Log.Default.Level))
-	if _, err := logrus.ParseLevel(level); err != nil {
+	if !isValidLogLevel(level) {
 		fmt.Printf("[config] 无效的 log.default.level: %q，已回退为 info\n", cfg.Log.Default.Level)
 		cfg.Log.Default.Level = "info"
 	}
@@ -65,5 +63,15 @@ func validateConfigOn(cfg *GlobalConfig) {
 	}
 	if cfg.Log.File.Filename == "" {
 		cfg.Log.File.Filename = "system"
+	}
+}
+
+// isValidLogLevel 校验日志级别名称是否合法（与 logrus/slog 兼容的通用级别集合）。
+func isValidLogLevel(level string) bool {
+	switch level {
+	case "debug", "info", "warn", "warning", "error", "fatal", "panic", "trace":
+		return true
+	default:
+		return false
 	}
 }
