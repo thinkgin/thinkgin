@@ -2,6 +2,16 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.10.1] - 2026-05-01
+
+### Changed
+
+- **全局可变状态标记 Deprecated**（REVIEW #5）：`app.Log` 全局变量添加 `Deprecated` 注释，引导用户迁移至 `ServiceContext.Log`
+  - `app.Config` 已在 v3.7.0 标记 Deprecated，本次补齐 `app.Log`
+  - 不破坏向后兼容性，仅文档引导
+
+---
+
 ## [3.10.0] - 2026-05-01
 
 ### Changed

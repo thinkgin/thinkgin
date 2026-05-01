@@ -12,6 +12,8 @@ import (
 
 // Log 是进程级的全局 Logger 单例（Logger 接口）。
 // 通过 InitLogger 或 Bootstrap 填充；调用方统一使用 GetLogger 访问。
+//
+// Deprecated: 新代码应通过 ServiceContext.Log 获取 Logger，而非直接访问全局变量。
 var Log Logger
 
 // GetLogger 返回全局 Logger 接口。若尚未初始化，返回基于 slog 标准实例的兜底，
