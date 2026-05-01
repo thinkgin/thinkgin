@@ -51,22 +51,15 @@ func Init() error {
 	defName = cfg.Database.Default
 
 	var errs []error
-	for name, raw := range cfg.Database.Connections {
-		conn, ok := raw.(map[string]interface{})
-		if !ok {
-			errs = append(errs, fmt.Errorf("%s: invalid connection structure", name))
-			continue
-		}
-
-		driver, _ := conn["driver"].(string)
-		if driver == "redis" {
+	for name, conn := range cfg.Database.Connections {
+		if conn.Driver == "redis" {
 			// Redis 不属于本包职责，静默跳过。
 			continue
 		}
 
-		db, err := openConnection(driver, conn)
+		db, err := openConnection(conn)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("%s(%s): %w", name, driver, err))
+			errs = append(errs, fmt.Errorf("%s(%s): %w", name, conn.Driver, err))
 			continue
 		}
 		dbs[name] = db

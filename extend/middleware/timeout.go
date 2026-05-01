@@ -150,7 +150,10 @@ func (w *timeoutWriter) Flush() {
 	w.WriteHeaderNow()
 }
 
+// CloseNotify 实现 gin.ResponseWriter 接口要求。
+// Deprecated: Go 1.11 已废弃 http.CloseNotifier，但 Gin 接口仍要求。
 func (w *timeoutWriter) CloseNotify() <-chan bool {
+	//nolint:staticcheck // SA1019: Gin 接口要求
 	return w.parent.CloseNotify()
 }
 

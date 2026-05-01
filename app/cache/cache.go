@@ -37,13 +37,10 @@ func NewStore(name string) Store {
 
 	// 尝试从配置中获取 driver 信息
 	if cfg != nil {
-		if raw, ok := cfg.Cache.Stores[name]; ok {
-			if m, ok := raw.(map[string]interface{}); ok {
-				if driver, _ := m["driver"].(string); driver == "redis" {
-					if client, err := Get(name); err == nil {
-						prefix := cfg.Cache.Prefix
-						return NewRedisStore(client, prefix)
-					}
+		if store, ok := cfg.Cache.Stores[name]; ok {
+			if store.Driver == "redis" {
+				if client, err := Get(name); err == nil {
+					return NewRedisStore(client, cfg.Cache.Prefix)
 				}
 			}
 		}
@@ -88,31 +85,19 @@ func Init() error {
 	dbConns := cfg.Database.Connections
 
 	var errs []error
-	for name, raw := range cfg.Cache.Stores {
-		store, ok := raw.(map[string]interface{})
-		if !ok {
-			errs = append(errs, fmt.Errorf("%s: invalid store structure", name))
-			continue
-		}
-		driver, _ := store["driver"].(string)
-		if driver != "redis" {
+	for name, store := range cfg.Cache.Stores {
+		if store.Driver != "redis" {
 			// memory / file 暂不实现，不报错也不产生 client。
 			continue
 		}
 
-		connRef, _ := store["connection"].(string)
-		connRaw, exists := dbConns[connRef]
+		conn, exists := dbConns[store.Connection]
 		if !exists {
-			errs = append(errs, fmt.Errorf("%s: connection %q not found in database.yaml", name, connRef))
-			continue
-		}
-		connMap, ok := connRaw.(map[string]interface{})
-		if !ok {
-			errs = append(errs, fmt.Errorf("%s: connection %q has invalid structure", name, connRef))
+			errs = append(errs, fmt.Errorf("%s: connection %q not found in database.yaml", name, store.Connection))
 			continue
 		}
 
-		client, err := openRedis(connMap)
+		client, err := openRedis(conn)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("%s: %w", name, err))
 			continue
@@ -156,14 +141,27 @@ func CloseAll() error {
 	return errors.Join(errs...)
 }
 
-// openRedis 从配置 map 构造 *redis.Client 并 Ping 探活。
+// openRedis 从 ConnectionConfig 构造 *redis.Client 并 Ping 探活。
 // 探活失败时 client 会被关闭并返回错误，避免泄漏。
-func openRedis(conn map[string]interface{}) (*redis.Client, error) {
+func openRedis(conn app.ConnectionConfig) (*redis.Client, error) {
+	host := conn.Host
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	port := conn.Port
+	if port == 0 {
+		port = 6379
+	}
+	poolSize := conn.PoolSize
+	if poolSize == 0 {
+		poolSize = 10
+	}
+
 	opt := &redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", strOr(conn, "host", "127.0.0.1"), intOr(conn, "port", 6379)),
-		Password: strOr(conn, "password", ""),
-		DB:       intOr(conn, "database", 0),
-		PoolSize: intOr(conn, "pool_size", 10),
+		Addr:     fmt.Sprintf("%s:%d", host, port),
+		Password: conn.Password,
+		DB:       0,
+		PoolSize: poolSize,
 	}
 	client := redis.NewClient(opt)
 
@@ -174,29 +172,4 @@ func openRedis(conn map[string]interface{}) (*redis.Client, error) {
 		return nil, fmt.Errorf("ping %s: %w", opt.Addr, err)
 	}
 	return client, nil
-}
-
-// 以下工具函数与 app/database 同型，此处重复定义是为了避免包之间的循环依赖。
-// 如果将来出现第三个类似需求，可考虑抽到 app/internal/confutil 共用。
-
-func strOr(m map[string]interface{}, key, fallback string) string {
-	if v, ok := m[key].(string); ok && v != "" {
-		return v
-	}
-	return fallback
-}
-
-func intOr(m map[string]interface{}, key string, fallback int) int {
-	switch v := m[key].(type) {
-	case int:
-		return v
-	case int32:
-		return int(v)
-	case int64:
-		return int(v)
-	case float64:
-		return int(v)
-	default:
-		return fallback
-	}
 }

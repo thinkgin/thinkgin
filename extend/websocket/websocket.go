@@ -21,6 +21,8 @@ import (
 	"net/http"
 	"sync"
 
+	"thinkgin/app"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -58,13 +60,66 @@ func (c *Conn) ReadJSON(v any) error {
 type ConnHandler func(conn *Conn)
 
 // DefaultUpgrader 默认的 WebSocket Upgrader 配置。
-// CheckOrigin 默认放通所有 origin，生产环境请替换为严格检查。
+// CheckOrigin 从 CORS 配置中读取 allow_origins 白名单。
+// 若配置为 ["*"] 或未配置 CORS，则允许所有 Origin。
 var DefaultUpgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
+	CheckOrigin:     checkOriginFromConfig,
+}
+
+// checkOriginFromConfig 根据 middleware.config.cors.allow_origins 校验 WebSocket Origin。
+func checkOriginFromConfig(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true // 同源请求无 Origin 头
+	}
+
+	allowed := getAllowedOrigins()
+	if len(allowed) == 0 {
+		return true // 未配置时默认放行
+	}
+	for _, o := range allowed {
+		if o == "*" || o == origin {
+			return true
+		}
+	}
+	return false
+}
+
+// getAllowedOrigins 从全局 CORS 配置中提取 allow_origins 列表。
+func getAllowedOrigins() []string {
+	cfg := app.GetConfig()
+	if cfg == nil || cfg.Middleware.Config == nil {
+		return nil
+	}
+	raw, ok := cfg.Middleware.Config["cors"]
+	if !ok {
+		return nil
+	}
+	m, ok := raw.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	rawOrigins, ok := m["allow_origins"]
+	if !ok {
+		return nil
+	}
+
+	switch v := rawOrigins.(type) {
+	case []interface{}:
+		out := make([]string, 0, len(v))
+		for _, item := range v {
+			if s, ok := item.(string); ok {
+				out = append(out, s)
+			}
+		}
+		return out
+	case string:
+		return []string{v}
+	default:
+		return nil
+	}
 }
 
 // Handler 返回将 HTTP 升级为 WebSocket 的 Gin HandlerFunc。

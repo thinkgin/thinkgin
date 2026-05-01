@@ -2,6 +2,32 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.9.0] - 2026-05-01
+
+### Changed
+
+- **数据库/缓存配置强类型化**（REVIEW #10）：`DatabaseConfig.Connections` 从 `map[string]interface{}` 改为 `map[string]ConnectionConfig`，`CacheConfig.Stores` 从 `map[string]interface{}` 改为 `map[string]CacheStoreConfig`
+  - 新增 `ConnectionConfig` 结构体：覆盖 MySQL/PostgreSQL/SQLite/Redis 全部字段，编译期类型校验
+  - 新增 `CacheStoreConfig` 结构体：driver/connection/max_size/path 强类型
+  - 移除 `database/open.go`、`cache/cache.go`、`session/redis_store.go` 中的 `strOr`/`intOr`/`toInt` 运行时类型断言工具函数
+  - 所有消费方（database.Init / cache.Init / session.newRedisStore）改为直接读取结构体字段
+  - 配套测试全部适配强类型
+
+- **WebSocket 安全默认值**（REVIEW #14）：`DefaultUpgrader.CheckOrigin` 从 `return true` 改为配置驱动
+  - 读取 `middleware.config.cors.allow_origins` 白名单
+  - 未配置或配置为 `["*"]` 时放行，否则仅允许白名单内 Origin 升级 WebSocket
+
+### Fixed
+
+- **Redis 限流上下文传递**（REVIEW #13）：`ratelimit_redis.go` 的 `context.Background()` 改为 `c.Request.Context()`，支持请求取消和链路追踪
+- **超时中间件 CloseNotify**（REVIEW #3）：为 `CloseNotify()` 添加 `Deprecated` 注释和 `nolint:staticcheck` 标记，明确标注为 Gin 接口强制要求
+
+### Renamed
+
+- `extend/middleware/coverage_boost_test.go` → `middleware_extra_test.go`（REVIEW #17）
+
+---
+
 ## [3.8.1] - 2026-04-30
 
 ### Changed

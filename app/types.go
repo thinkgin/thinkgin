@@ -69,19 +69,51 @@ type ServerConfig struct {
 	} `yaml:"upload"`
 }
 
+// ConnectionConfig 描述单个数据库/Redis 命名连接的完整配置。
+// 适配 MySQL / PostgreSQL / SQLite / Redis 的所有公共与专属字段。
+type ConnectionConfig struct {
+	Driver      string `yaml:"driver"`
+	Host        string `yaml:"host"`
+	Port        int    `yaml:"port"`
+	Database    string `yaml:"database"`
+	Username    string `yaml:"username"`
+	Password    string `yaml:"password"`
+	Charset     string `yaml:"charset"`
+	Collation   string `yaml:"collation"`
+	SSLMode     string `yaml:"sslmode"`
+	TablePrefix string `yaml:"table_prefix"`
+	PoolSize    int    `yaml:"pool_size"` // Redis 专用
+	Pool        struct {
+		MaxOpen     int `yaml:"max_open"`
+		MaxIdle     int `yaml:"max_idle"`
+		MaxLifetime int `yaml:"max_lifetime"`
+	} `yaml:"pool"`
+	Timeout struct {
+		Connect int `yaml:"connect"`
+		Read    int `yaml:"read"`
+		Write   int `yaml:"write"`
+	} `yaml:"timeout"`
+}
+
 // DatabaseConfig 对应 config/database.yaml。
-// NOTE: 当前仅解析，未在 app/ 代码中实际建立连接池。
 type DatabaseConfig struct {
-	Default     string                 `yaml:"default"`
-	Connections map[string]interface{} `yaml:"connections"`
+	Default     string                        `yaml:"default"`
+	Connections map[string]ConnectionConfig   `yaml:"connections"`
+}
+
+// CacheStoreConfig 描述单个缓存 store 的配置。
+type CacheStoreConfig struct {
+	Driver     string `yaml:"driver"`
+	Connection string `yaml:"connection"` // 引用 database.yaml.connections 中的命名连接
+	MaxSize    int    `yaml:"max_size"`   // memory driver 专用
+	Path       string `yaml:"path"`       // file driver 专用
 }
 
 // CacheConfig 对应 config/cache.yaml。
-// NOTE: 当前仅解析，未建立 Redis/Memcached 客户端。
 type CacheConfig struct {
-	Default string                 `yaml:"default"`
-	Prefix  string                 `yaml:"prefix"`
-	Stores  map[string]interface{} `yaml:"stores"`
+	Default string                        `yaml:"default"`
+	Prefix  string                        `yaml:"prefix"`
+	Stores  map[string]CacheStoreConfig   `yaml:"stores"`
 	Tags    struct {
 		Enabled   bool   `yaml:"enabled"`
 		Separator string `yaml:"separator"`

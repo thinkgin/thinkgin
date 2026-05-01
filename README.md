@@ -4,10 +4,10 @@
 
 [![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Gin](https://img.shields.io/badge/Gin-v1.12-blue)](https://github.com/gin-gonic/gin)
-[![Version](https://img.shields.io/badge/Version-3.8.1-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-3.9.0-orange)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **当前版本 3.8.1** — 内置 18 个可插拔中间件、ServiceContext 依赖注入、WebSocket、按路由粒度熔断器、atomic 配置热更新、lumberjack 日志轮转等。  
+> **当前版本 3.9.0** — 内置 18 个可插拔中间件、ServiceContext 依赖注入、WebSocket、按路由粒度熔断器、atomic 配置热更新、lumberjack 日志轮转等。  
 > 完整更新日志见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
@@ -126,7 +126,7 @@ go run main.go
 go build -o thinkgin main.go
 
 # 通过 ldflags 注入版本号（CI/CD 推荐）
-go build -ldflags "-X thinkgin/app.Version=3.8.1" -o thinkgin main.go
+go build -ldflags "-X thinkgin/app.Version=3.9.0" -o thinkgin main.go
 
 # 交叉编译
 GOOS=linux GOARCH=amd64 go build -o thinkgin-linux main.go
@@ -368,8 +368,8 @@ CMD ["./thinkgin"]
 ```
 
 ```bash
-docker build -t thinkgin:3.8.1 .
-docker run -p 8000:8000 thinkgin:3.8.1
+docker build -t thinkgin:3.9.0 .
+docker run -p 8000:8000 thinkgin:3.9.0
 ```
 
 ### Kubernetes
@@ -406,6 +406,7 @@ readinessProbe:
 
 | 版本 | 亮点 |
 |------|------|
+| **3.9.0** | 强类型配置 / WebSocket 安全 / Redis 限流上下文 / 测试重命名 |
 | **3.8.1** | 统一版本号管理（`app/version.go` + ldflags 注入） |
 | **3.8.0** | 日志轮转替换为 lumberjack，移除 archived 依赖 |
 | **3.7.2** | 熔断器按路由粒度隔离 |

@@ -17,18 +17,18 @@ func resetState() {
 }
 
 // setConfig 构造一个可控的全局配置，避免测试用例间相互串扰。
-func setConfig(stores map[string]interface{}, conns map[string]interface{}, def string) {
+func setConfig(cacheStores map[string]app.CacheStoreConfig, conns map[string]app.ConnectionConfig, def string) {
 	app.Config = &app.GlobalConfig{}
 	app.Config.Cache.Default = def
-	app.Config.Cache.Stores = stores
+	app.Config.Cache.Stores = cacheStores
 	app.Config.Database.Connections = conns
 }
 
 func TestInit_SkipsNonRedisDrivers(t *testing.T) {
 	resetState()
-	setConfig(map[string]interface{}{
-		"memory": map[string]interface{}{"driver": "memory"},
-		"file":   map[string]interface{}{"driver": "file"},
+	setConfig(map[string]app.CacheStoreConfig{
+		"memory": {Driver: "memory"},
+		"file":   {Driver: "file"},
 	}, nil, "memory")
 
 	if err := Init(); err != nil {
@@ -41,9 +41,9 @@ func TestInit_SkipsNonRedisDrivers(t *testing.T) {
 
 func TestInit_MissingConnectionReference(t *testing.T) {
 	resetState()
-	setConfig(map[string]interface{}{
-		"redis": map[string]interface{}{"driver": "redis", "connection": "nonexistent"},
-	}, map[string]interface{}{}, "redis")
+	setConfig(map[string]app.CacheStoreConfig{
+		"redis": {Driver: "redis", Connection: "nonexistent"},
+	}, map[string]app.ConnectionConfig{}, "redis")
 
 	err := Init()
 	if err == nil {
@@ -55,14 +55,14 @@ func TestInit_PingFailureIsReported(t *testing.T) {
 	resetState()
 	// 使用 RFC 5737 保留的 TEST-NET-1 地址，保证永不连通。
 	setConfig(
-		map[string]interface{}{
-			"redis": map[string]interface{}{"driver": "redis", "connection": "redis"},
+		map[string]app.CacheStoreConfig{
+			"redis": {Driver: "redis", Connection: "redis"},
 		},
-		map[string]interface{}{
-			"redis": map[string]interface{}{
-				"driver": "redis",
-				"host":   "192.0.2.1",
-				"port":   6379,
+		map[string]app.ConnectionConfig{
+			"redis": {
+				Driver: "redis",
+				Host:   "192.0.2.1",
+				Port:   6379,
 			},
 		},
 		"redis",

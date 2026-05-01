@@ -35,20 +35,29 @@ func newRedisStore(connection string, ttl time.Duration) (*redisStore, error) {
 	if cfg == nil {
 		return nil, errors.New("session: global config is nil")
 	}
-	raw, ok := cfg.Database.Connections[connection]
+	conn, ok := cfg.Database.Connections[connection]
 	if !ok {
 		return nil, fmt.Errorf("session: connection %q not found in database.yaml", connection)
 	}
-	conn, ok := raw.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("session: connection %q has invalid structure", connection)
+
+	host := conn.Host
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	port := conn.Port
+	if port == 0 {
+		port = 6379
+	}
+	poolSize := conn.PoolSize
+	if poolSize == 0 {
+		poolSize = 10
 	}
 
 	client := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", strOr(conn, "host", "127.0.0.1"), intOr(conn, "port", 6379)),
-		Password: strOr(conn, "password", ""),
-		DB:       intOr(conn, "database", 0),
-		PoolSize: intOr(conn, "pool_size", 10),
+		Addr:     fmt.Sprintf("%s:%d", host, port),
+		Password: conn.Password,
+		DB:       0,
+		PoolSize: poolSize,
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -98,26 +107,3 @@ func (rs *redisStore) Close() error {
 	return rs.client.Close()
 }
 
-// 下列工具函数与 app/cache 相同；重复声明避免跨包依赖带来的循环风险。
-
-func strOr(m map[string]interface{}, key, fallback string) string {
-	if v, ok := m[key].(string); ok && v != "" {
-		return v
-	}
-	return fallback
-}
-
-func intOr(m map[string]interface{}, key string, fallback int) int {
-	switch v := m[key].(type) {
-	case int:
-		return v
-	case int32:
-		return int(v)
-	case int64:
-		return int(v)
-	case float64:
-		return int(v)
-	default:
-		return fallback
-	}
-}

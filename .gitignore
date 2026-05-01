@@ -58,5 +58,5 @@ vendor/
 # 页面
 html/
 
-# 审查报告
-# docs/REVIEW.md
+# 审查报告（仅本地）
+docs/REVIEW.md

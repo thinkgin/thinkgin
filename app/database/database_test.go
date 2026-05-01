@@ -23,17 +23,17 @@ func newTestConfig(t *testing.T) {
 	t.Helper()
 	app.Config = &app.GlobalConfig{}
 	app.Config.Database.Default = "primary"
-	app.Config.Database.Connections = map[string]interface{}{
-		"primary": map[string]interface{}{
-			"driver":   "sqlite",
-			"database": filepath.Join(t.TempDir(), "test.db"),
+	app.Config.Database.Connections = map[string]app.ConnectionConfig{
+		"primary": {
+			Driver:   "sqlite",
+			Database: filepath.Join(t.TempDir(), "test.db"),
 		},
-		"secondary": map[string]interface{}{
-			"driver":   "sqlite",
-			"database": filepath.Join(t.TempDir(), "test2.db"),
+		"secondary": {
+			Driver:   "sqlite",
+			Database: filepath.Join(t.TempDir(), "test2.db"),
 		},
-		"skipped_redis": map[string]interface{}{
-			"driver": "redis", // 应被明确跳过
+		"skipped_redis": {
+			Driver: "redis", // 应被明确跳过
 		},
 	}
 }
@@ -92,8 +92,8 @@ func TestInit_InvalidDriverReturnsError(t *testing.T) {
 	resetState()
 	app.Config = &app.GlobalConfig{}
 	app.Config.Database.Default = "bad"
-	app.Config.Database.Connections = map[string]interface{}{
-		"bad": map[string]interface{}{"driver": "oracle"},
+	app.Config.Database.Connections = map[string]app.ConnectionConfig{
+		"bad": {Driver: "oracle"},
 	}
 	defer CloseAll()
 

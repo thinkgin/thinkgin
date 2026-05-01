@@ -12,7 +12,6 @@
 package middleware
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -93,7 +92,7 @@ func RedisRateLimit() gin.HandlerFunc {
 		key := fmt.Sprintf("thinkgin:ratelimit:%s", ip)
 		now := float64(time.Now().UnixMilli()) / 1000.0
 
-		ctx := context.Background()
+		ctx := c.Request.Context()
 		result, err := luaTokenBucket.Run(ctx, rdb, []string{key},
 			capacity, rate, now,
 		).Int()
