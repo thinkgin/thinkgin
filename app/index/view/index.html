@@ -1,22 +1,31 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.title}} {{.version}}</title>
     <meta name="description" content="ThinkGin - 为 Go 开发设计的高性能 Web 框架">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body {
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
             height: 100%;
             background: #ffffff;
             color: #222;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
         }
+
         .wrap {
             max-width: 960px;
             padding: 10vh 8vw 4vh;
         }
+
         .smile {
             font-size: 140px;
             line-height: 1;
@@ -25,6 +34,7 @@
             margin-bottom: 40px;
             color: #111;
         }
+
         h1 {
             font-size: 56px;
             font-weight: 500;
@@ -32,37 +42,56 @@
             color: #111;
             letter-spacing: -1px;
         }
+
         .subtitle {
             font-size: 20px;
             color: #333;
             margin-bottom: 20px;
             font-weight: 400;
         }
+
         .links a {
             color: #1677ff;
             text-decoration: none;
             font-size: 15px;
             margin-right: 28px;
         }
-        .links a:hover { text-decoration: underline; }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+
         @media (max-width: 640px) {
-            .smile { font-size: 96px; }
-            h1 { font-size: 36px; }
-            .subtitle { font-size: 16px; }
-            .wrap { padding: 8vh 6vw 4vh; }
+            .smile {
+                font-size: 96px;
+            }
+
+            h1 {
+                font-size: 36px;
+            }
+
+            .subtitle {
+                font-size: 16px;
+            }
+
+            .wrap {
+                padding: 8vh 6vw 4vh;
+            }
         }
     </style>
 </head>
+
 <body>
     <div class="wrap">
         <div class="smile">:)</div>
         <h1>{{.title}}{{.version}}</h1>
         <p class="subtitle">十年磨一剑 - 为 Go 开发设计的高性能框架</p>
         <p class="links">
-            <a href="https://gitee.com/libaicode/thinkgin" target="_blank">官方源码下载</a>
+            <a href="https://thinkgin.com/" target="_blank">官网</a>
             <a href="https://github.com/gin-gonic/gin" target="_blank">特别鸣谢 Gin</a>
             <a href="/index/hello">Hello Word</a>
         </p>
     </div>
 </body>
+
 </html>
