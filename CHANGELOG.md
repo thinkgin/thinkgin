@@ -2,6 +2,17 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.9.1] - 2026-05-01
+
+### Fixed
+
+- **超时中间件竞态窗口**（REVIEW #3）：重构为 "goroutine handler + select" 模式
+  - `c.Next()` 移入子协程，主协程 `select` 确定性选择"完成"或"超时"分支，消除竞态窗口
+  - 新增 `panicCh` 通道捕获 handler panic 并在主协程重新抛出，确保 Recovery 中间件正常工作
+  - 新增 `TestTimeout_PanicRecovery` 测试用例
+
+---
+
 ## [3.9.0] - 2026-05-01
 
 ### Changed

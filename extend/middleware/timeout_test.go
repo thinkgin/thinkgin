@@ -99,3 +99,21 @@ func TestTimeout_DefaultDuration(t *testing.T) {
 		t.Errorf("status = %d, want 200", w.Code)
 	}
 }
+
+func TestTimeout_PanicRecovery(t *testing.T) {
+	r := gin.New()
+	r.Use(gin.Recovery())
+	r.Use(TimeoutWithDuration(2 * time.Second))
+	r.GET("/panic", func(c *gin.Context) {
+		panic("test panic in handler")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/panic", nil)
+	r.ServeHTTP(w, req)
+
+	// Recovery 中间件会捕获 panic 并返回 500
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500", w.Code)
+	}
+}

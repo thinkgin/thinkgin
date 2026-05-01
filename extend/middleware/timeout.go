@@ -25,6 +25,9 @@ func Timeout() gin.HandlerFunc {
 }
 
 // TimeoutWithDuration returns a middleware that applies a custom request timeout.
+//
+// 实现采用 "goroutine handler + select" 模式：c.Next() 在子协程中执行，
+// 主协程通过 select 确定性地选择"完成"或"超时"分支，消除竞态窗口。
 func TimeoutWithDuration(timeout time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), timeout)
@@ -35,23 +38,36 @@ func TimeoutWithDuration(timeout time.Duration) gin.HandlerFunc {
 		c.Writer = bufferedWriter
 		c.Request = c.Request.WithContext(ctx)
 
-		finished := make(chan struct{})
+		done := make(chan struct{})
+		panicCh := make(chan interface{}, 1)
+
 		go func() {
-			select {
-			case <-ctx.Done():
-				bufferedWriter.writeTimeoutResponse()
-			case <-finished:
-			}
+			defer func() {
+				if p := recover(); p != nil {
+					panicCh <- p
+				}
+				close(done)
+			}()
+			c.Next()
 		}()
 
-		c.Next()
-		if ctx.Err() != nil {
+		select {
+		case <-done:
+			// Handler 完成（含 panic）。先检查是否有 panic 需要重新抛出。
+			select {
+			case p := <-panicCh:
+				// 恢复原始 Writer，使上层 Recovery 中间件直接写入真实响应。
+				c.Writer = originalWriter
+				panic(p)
+			default:
+			}
+			// 正常完成 → 提交缓冲响应到原始 Writer
+			if err := bufferedWriter.commit(); err != nil {
+				_ = c.Error(err)
+			}
+		case <-ctx.Done():
+			// 超时 → 写 504；handler 协程持有已取消的 context，会自行退出。
 			bufferedWriter.writeTimeoutResponse()
-		}
-		close(finished)
-
-		if err := bufferedWriter.commit(); err != nil {
-			_ = c.Error(err)
 		}
 	}
 }
