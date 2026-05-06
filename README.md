@@ -4,10 +4,10 @@
 
 [![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Gin](https://img.shields.io/badge/Gin-v1.12-blue)](https://github.com/gin-gonic/gin)
-[![Version](https://img.shields.io/badge/Version-3.10.3-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-3.11.0-orange)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **当前版本 3.10.3** — 内置 18 个可插拔中间件、ServiceContext 依赖注入、WebSocket、按路由粒度熔断器、atomic 配置热更新、slog 标准日志引擎等。  
+> **当前版本 3.11.0** — 内置 18 个可插拔中间件 + **自定义中间件注册表**、ServiceContext 依赖注入、WebSocket、按路由粒度熔断器、atomic 配置热更新、slog 标准日志引擎等。  
 > 完整更新日志见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
@@ -204,6 +204,50 @@ middleware:
     - timeout
     - body_limit
 ```
+
+### 自定义中间件注册（v3.11.0+）
+
+业务可在 `main` 早期通过 `route.RegisterMiddleware` 注入自定义中间件，之后即可在 `middleware.yaml` 的 `global` / `groups` 列表里按名启用，**无需 fork 框架**。
+
+```go
+package main
+
+import (
+    "github.com/gin-gonic/gin"
+    "thinkgin/app"
+    "thinkgin/framework"
+    "thinkgin/route"
+)
+
+func main() {
+    // 1. 注册自定义中间件（必须在 framework.New 之前）
+    route.RegisterMiddleware("audit", func() gin.HandlerFunc {
+        return func(c *gin.Context) {
+            app.GetLogger().Infof("audit: %s %s", c.Request.Method, c.Request.URL.Path)
+            c.Next()
+        }
+    })
+
+    // 2. 也可以覆盖内置中间件（例如替换默认 access_log）
+    route.RegisterMiddleware("access_log", func() gin.HandlerFunc {
+        return myaccesslog.New()
+    })
+
+    // 3. 然后在 config/middleware.yaml 写：
+    //    middleware:
+    //      global: [recovery, audit, access_log]
+
+    a, _ := framework.New()
+    _ = a.Run(nil)
+}
+```
+
+注册表语义：
+
+- **工厂函数**而非直接的 `HandlerFunc`：每次 `Use` 时拿到独立实例，避免共享状态污染。
+- **优先级**：自定义注册项 **优先于** 内置中间件，允许覆盖（如自定义 logger 替代 `access_log`）。
+- **未命中**自动回落到内置 switch，保持配置前向兼容。
+- **线程安全**：基于 `sync.Map`，运行期读零开销。
 
 ### 熔断器
 

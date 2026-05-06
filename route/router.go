@@ -94,8 +94,16 @@ func applyMiddleware(r *gin.Engine, name string) {
 }
 
 // resolveMiddleware 将中间件名解析为具体的 HandlerFunc。
-// 未知名称返回 nil，方便前向兼容。
+// 解析顺序：
+//  1. 优先查询自定义注册表（route.RegisterMiddleware 注册的项），允许业务覆盖内置中间件。
+//  2. 未命中时回落到内置 switch（保持 v3.10.x 行为兼容）。
+//  3. 最终未命中返回 nil，由 applyMiddleware 静默忽略，便于配置前向兼容。
 func resolveMiddleware(name string) gin.HandlerFunc {
+	// 1. 先查自定义注册表，支持业务扩展与覆盖内置实现。
+	if h := LookupMiddleware(name); h != nil {
+		return h
+	}
+	// 2. 内置中间件 switch（保留原有行为）。
 	switch name {
 	case "recovery":
 		return middleware.Recovery()

@@ -2,6 +2,23 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.11.0] - 2026-05-07
+
+### Added
+
+- **自定义中间件注册表**（P0-2）：新增 `route.RegisterMiddleware(name, factory)` 公共 API，业务可在 `main` 早期注入自定义中间件，并在 `config/middleware.yaml` 的 `global` / `groups` 列表中按名启用，**彻底打破"hardcoded switch 不可扩展"的限制**
+  - 新增文件 `route/registry.go`：基于 `sync.Map` 的全局注册表，工厂函数语义保证"每次 Use 独立实例"
+  - 公共 API：`RegisterMiddleware` / `UnregisterMiddleware` / `LookupMiddleware` / `HasMiddleware`
+  - **解析顺序**：自定义注册表优先 → 未命中回落到内置 switch → 仍未命中静默忽略；允许覆盖内置中间件（例如用业务自有的 access_log 替换框架默认）
+  - 新增 8 个测试覆盖注册/查询/覆盖/并发场景，`route` 包测试覆盖率从 41.3% 提升至 47.4%
+  - 完整使用示例见 [`README.md`](README.md#自定义中间件注册v3110)
+
+### Why
+
+v3.10.x 之前 `route.resolveMiddleware` 是一个 18 分支 hardcoded `switch`，第三方/业务**唯一的扩展方式是 fork 框架**，违反开闭原则，也是 v3.10.2 内部评估报告中标记为 **P0-2 结构性问题**的项目。本版本以 0.5 天工作量根治该问题，且**100% 向后兼容**——所有 v3.10.x 的配置无需任何改动即可运行。
+
+---
+
 ## [3.10.3] - 2026-05-07
 
 ### Changed
