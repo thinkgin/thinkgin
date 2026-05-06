@@ -7,4 +7,4 @@ package app
 //	go build -ldflags "-X thinkgin/app.Version=3.8.1" -o thinkgin
 //
 // 未注入时使用此处硬编码的默认值。
-var Version = "3.10.1"
+var Version = "3.10.2"

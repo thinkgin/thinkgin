@@ -2,6 +2,16 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.10.2] - 2026-05-06
+
+### Fixed
+
+- **超时中间件 -race 数据竞争**：v3.9.1 引入的"goroutine handler + select"模式中，超时分支返回前未等待 handler 子协程结束，导致 `go test -race` 在 GitHub Actions CI（macOS/Ubuntu/Windows）报告竞争
+  - `case <-ctx.Done()` 分支在写入 504 后增加 `<-done` 等待 handler 协程清理，消除竞争
+  - 业务 handler 应当监听 `c.Request.Context().Done()` 提前退出，否则会阻塞此处（属于编写规范要求）
+
+---
+
 ## [3.10.1] - 2026-05-01
 
 ### Changed

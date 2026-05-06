@@ -66,8 +66,12 @@ func TimeoutWithDuration(timeout time.Duration) gin.HandlerFunc {
 				_ = c.Error(err)
 			}
 		case <-ctx.Done():
-			// 超时 → 写 504；handler 协程持有已取消的 context，会自行退出。
+			// 超时 → 写 504。handler 协程持有已取消的 context，应尽快退出。
+			// 必须等待其退出后再返回：否则 ServeHTTP 已结束、调用方读取响应，
+			// 但 handler 协程仍在访问 c/c.Writer，触发 -race 数据竞争。
+			// 注意：编写规范要求业务 handler 监听 ctx.Done() 提前退出，否则会阻塞此处。
 			bufferedWriter.writeTimeoutResponse()
+			<-done
 		}
 	}
 }
