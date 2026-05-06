@@ -4,11 +4,32 @@
 
 [![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Gin](https://img.shields.io/badge/Gin-v1.12-blue)](https://github.com/gin-gonic/gin)
-[![Version](https://img.shields.io/badge/Version-3.10.1-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-3.10.3-orange)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **当前版本 3.10.1** — 内置 18 个可插拔中间件、ServiceContext 依赖注入、WebSocket、按路由粒度熔断器、atomic 配置热更新、slog 标准日志引擎等。  
+> **当前版本 3.10.3** — 内置 18 个可插拔中间件、ServiceContext 依赖注入、WebSocket、按路由粒度熔断器、atomic 配置热更新、slog 标准日志引擎等。  
 > 完整更新日志见 [CHANGELOG.md](CHANGELOG.md)。
+
+---
+
+## 定位声明（先看这个，再决定是否选用）
+
+ThinkGin 的目标是 **「单体 Go Web 业务后台 / 中后台脚手架」**，强调 **工程纪律 · 配置秩序 · 开箱即交付**。
+
+**适合场景** ✅
+
+- 中小型业务后台、SaaS 控制台、内部系统、API 服务
+- 团队希望从 Gin 裸跑直接升级到「带 18 中间件、配置热更新、Prometheus、OTel 的生产级骨架」
+- 习惯 ThinkPHP / Laravel 风格的 YAML 多文件配置
+- 优先 **可读性 / 可维护性 / 工程质量**，性能能跑满 Gin 即可（数千~数万 QPS）
+
+**不适合场景** ❌
+
+- 需要 18 万+ QPS 裸路由的高性能网关 → 请选 [Fiber](https://github.com/gofiber/fiber) / [Hertz](https://github.com/cloudwego/hertz)
+- 需要 gRPC / 多协议 / 服务发现 / 配置中心的云原生微服务 → 请选 [Kratos](https://github.com/go-kratos/kratos) / [go-zero](https://github.com/zeromicro/go-zero)
+- 追求极致零分配 / 内存优化的底层组件
+
+ThinkGin **不会** 与上述定位竞争。我们专注把单体业务后台的「最后一公里」做好。
 
 ---
 

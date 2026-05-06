@@ -2,6 +2,21 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.10.3] - 2026-05-07
+
+### Changed
+
+- **定位声明校准**：明确 ThinkGin 的"单体业务后台脚手架"定位，下掉所有"高性能"宣传词
+  - `README.md` 增加"定位声明"段落，诚实标注适合 / 不适合的场景，并指引高性能或微服务需求选用 Fiber/Hertz/Kratos/go-zero
+  - `app/index/view/index.html` 默认欢迎页"高性能框架"改为"生产级 Web 框架"
+  - 内部约定：性能不再是 ThinkGin 的核心卖点，**工程纪律 · 配置秩序 · 开箱即交付**才是
+
+### Why
+
+性能上限被基础组件（Gin + GORM）锁定，与 Fiber/Hertz 等 fasthttp/netpoll 系框架存在本质代差。继续宣传"高性能"会引发对比尴尬并误导用户。本版本是文档层校准，不涉及代码行为变更。
+
+---
+
 ## [3.10.2] - 2026-05-06
 
 ### Fixed
