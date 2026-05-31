@@ -117,3 +117,45 @@ func TestExecute_VersionPath(t *testing.T) {
 		t.Errorf("Execute version 输出 %q 不含版本号", out)
 	}
 }
+
+// TestRedactConfig_MasksSecrets 校验 config 命令脱敏逻辑覆盖所有敏感字段，
+// 且不修改原始配置对象。
+func TestRedactConfig_MasksSecrets(t *testing.T) {
+	src := &app.GlobalConfig{}
+	src.App.JWT.Secret = "super-secret-key"
+	src.Prometheus.Auth.Password = "prom-pass"
+	src.Database.Connections = map[string]app.ConnectionConfig{
+		"mysql": {Driver: "mysql", Password: "db-pass"},
+		"sqlite": {Driver: "sqlite"}, // 无密码，应保持空
+	}
+
+	got := redactConfig(src)
+
+	if got.App.JWT.Secret != redactedMark {
+		t.Errorf("JWT secret 未脱敏: %q", got.App.JWT.Secret)
+	}
+	if got.Prometheus.Auth.Password != redactedMark {
+		t.Errorf("prometheus 密码未脱敏: %q", got.Prometheus.Auth.Password)
+	}
+	if got.Database.Connections["mysql"].Password != redactedMark {
+		t.Errorf("DB 密码未脱敏: %q", got.Database.Connections["mysql"].Password)
+	}
+	if got.Database.Connections["sqlite"].Password != "" {
+		t.Errorf("空密码不应被替换: %q", got.Database.Connections["sqlite"].Password)
+	}
+
+	// 原始对象不能被修改（深拷贝保证）。
+	if src.App.JWT.Secret != "super-secret-key" {
+		t.Error("redactConfig 不应修改原始配置的 JWT secret")
+	}
+	if src.Database.Connections["mysql"].Password != "db-pass" {
+		t.Error("redactConfig 不应修改原始配置的 DB 密码")
+	}
+}
+
+// TestRedactConfig_Nil 确认 nil 输入安全。
+func TestRedactConfig_Nil(t *testing.T) {
+	if redactConfig(nil) != nil {
+		t.Error("redactConfig(nil) 应返回 nil")
+	}
+}

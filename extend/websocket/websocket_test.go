@@ -199,6 +199,83 @@ func TestHub_BroadcastAndLen(t *testing.T) {
 	}
 }
 
+func TestKeepAlive_ServerSendsPing(t *testing.T) {
+	r := gin.New()
+	// 业务侧用很短的 ping 周期，便于测试快速观察到 ping。
+	r.GET("/ws", KeepAliveHandler(func(conn *Conn) {
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				return
+			}
+		}
+	}, KeepAliveConfig{PingPeriod: 50 * time.Millisecond, PongWait: 2 * time.Second, WriteWait: time.Second}))
+	srv := httptest.NewServer(r)
+	defer srv.Close()
+
+	url := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws"
+	conn, resp, err := ws.DefaultDialer.Dial(url, nil)
+	closeResponseBody(resp)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.Close()
+
+	// 客户端登记 ping handler，收到服务端 ping 即标记。
+	gotPing := make(chan struct{}, 1)
+	conn.SetPingHandler(func(string) error {
+		select {
+		case gotPing <- struct{}{}:
+		default:
+		}
+		return nil
+	})
+
+	// 触发读循环以处理控制帧（ping）。
+	go func() {
+		conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				return
+			}
+		}
+	}()
+
+	select {
+	case <-gotPing:
+		// 收到服务端心跳 ping，符合预期。
+	case <-time.After(1500 * time.Millisecond):
+		t.Error("未在预期时间内收到服务端 ping")
+	}
+}
+
+func TestStopKeepAlive_Idempotent(t *testing.T) {
+	c := &Conn{}
+	// 未启动时调用 StopKeepAlive 不应 panic。
+	c.StopKeepAlive()
+
+	// 启动后多次停止也应安全。
+	c.keepAliveStop = make(chan struct{})
+	c.StopKeepAlive()
+	c.StopKeepAlive()
+}
+
+func TestKeepAliveConfig_Normalized(t *testing.T) {
+	// 零值应回退到默认值。
+	got := KeepAliveConfig{}.normalized()
+	if got.WriteWait != defaultWriteWait || got.PongWait != defaultPongWait {
+		t.Errorf("zero config not defaulted: %+v", got)
+	}
+	if got.PingPeriod >= got.PongWait {
+		t.Errorf("PingPeriod %v must be < PongWait %v", got.PingPeriod, got.PongWait)
+	}
+
+	// PingPeriod >= PongWait 应被纠正为小于 PongWait。
+	bad := KeepAliveConfig{PongWait: time.Second, PingPeriod: 2 * time.Second}.normalized()
+	if bad.PingPeriod >= bad.PongWait {
+		t.Errorf("PingPeriod not corrected: %+v", bad)
+	}
+}
+
 func TestHub_BroadcastJSON(t *testing.T) {
 	hub := NewHub()
 

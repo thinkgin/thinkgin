@@ -2,6 +2,27 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.14.0] - 2026-05-31
+
+本版本聚焦 **长连接健壮性与运维安全**：为 WebSocket 增加心跳保活，并对 `config` 命令做敏感字段脱敏。
+
+### Added
+
+- **WebSocket 心跳保活**（`extend/websocket/`）：
+  - `Conn.StartKeepAlive(cfg)` / `StopKeepAlive()`：后台按 `PingPeriod` 周期发送 ping，收到 pong 自动续期读超时（`PongWait`），死连接会因读超时被及时回收
+  - `KeepAliveHandler(h, cfg)`：自动启用心跳的 Handler，业务回调只需正常进入读循环即可，无需重复心跳样板代码
+  - `KeepAliveConfig`：`WriteWait` / `PongWait` / `PingPeriod` 三参数，零值回退到合理默认（10s / 60s / 54s）；`PingPeriod >= PongWait` 时自动纠正
+  - `WriteJSON` / `WriteSafeMessage` 现在在每次写前设置写超时（`WriteWait`），避免慢客户端阻塞写协程
+  - 新增 3 个测试覆盖 ping 发送、停止幂等、配置归一化
+
+### Security
+
+- **`config` 命令默认脱敏**（`cmd/config_dump.go`）：输出合并配置时，JWT 密钥、数据库/Redis 密码、Prometheus 认证密码默认替换为 `***REDACTED***`，避免在终端/CI 日志中泄漏
+  - 新增 `--show-secrets` 显式标志查看明文（谨慎使用）
+  - 脱敏走深拷贝，不影响运行时的真实配置；新增 2 个测试覆盖脱敏与不可变性
+
+---
+
 ## [3.13.0] - 2026-05-31
 
 本版本为 **P3 交付能力批次**：补齐"完整业务模块范例"与生产级容器化能力，降低新项目落地门槛。

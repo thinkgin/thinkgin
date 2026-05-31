@@ -4,10 +4,10 @@
 
 [![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Gin](https://img.shields.io/badge/Gin-v1.12-blue)](https://github.com/gin-gonic/gin)
-[![Version](https://img.shields.io/badge/Version-3.13.0-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-3.14.0-orange)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **当前版本 3.13.0** — 内置 18 个可插拔中间件 + **自定义中间件注册表**、ServiceContext 依赖注入、WebSocket、按路由粒度熔断器、atomic 配置热更新、slog 标准日志引擎等。  
+> **当前版本 3.14.0** — 内置 18 个可插拔中间件 + **自定义中间件注册表**、ServiceContext 依赖注入、WebSocket、按路由粒度熔断器、atomic 配置热更新、slog 标准日志引擎等。  
 > 完整更新日志见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
@@ -356,6 +356,13 @@ r.GET("/ws", websocket.Handler(func(conn *websocket.Conn) {
 hub := websocket.NewHub()
 hub.Broadcast(ws.TextMessage, msg)
 hub.BroadcastJSON(map[string]string{"event": "join"})
+
+// 心跳保活（v3.14.0+）：自动 ping/pong + 读写超时，及时回收死连接
+r.GET("/push", websocket.KeepAliveHandler(func(conn *websocket.Conn) {
+    for {
+        if _, _, err := conn.ReadMessage(); err != nil { break }
+    }
+}, websocket.KeepAliveConfig{})) // 零值使用默认 10s/60s/54s
 ```
 
 ## Session

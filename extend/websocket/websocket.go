@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"sync"
+	"time"
 
 	"thinkgin/app"
 
@@ -27,16 +28,55 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// 默认的心跳与超时参数。生产环境可通过 KeepAliveConfig 覆盖。
+const (
+	// defaultWriteWait 单次写操作的超时，防止慢客户端阻塞写协程。
+	defaultWriteWait = 10 * time.Second
+	// defaultPongWait 读取下一条消息（含 pong）的最大等待时间，超时视为连接已死。
+	defaultPongWait = 60 * time.Second
+	// defaultPingPeriod 主动发送 ping 的周期，必须小于 pongWait（留出 pong 往返余量）。
+	defaultPingPeriod = (defaultPongWait * 9) / 10
+)
+
 // Conn 包装 gorilla/websocket.Conn，提供便捷方法。
 type Conn struct {
 	*websocket.Conn
-	mu sync.Mutex // 保护并发写
+	mu        sync.Mutex // 保护并发写
+	writeWait time.Duration
+
+	keepAliveOnce sync.Once
+	keepAliveStop chan struct{}
+}
+
+// KeepAliveConfig 配置心跳与超时。零值字段回退到默认常量。
+type KeepAliveConfig struct {
+	// WriteWait 单次写超时。
+	WriteWait time.Duration
+	// PongWait 读超时（等待对端任意消息/pong 的最长时间）。
+	PongWait time.Duration
+	// PingPeriod 主动 ping 周期，应小于 PongWait。
+	PingPeriod time.Duration
+}
+
+func (k KeepAliveConfig) normalized() KeepAliveConfig {
+	if k.WriteWait <= 0 {
+		k.WriteWait = defaultWriteWait
+	}
+	if k.PongWait <= 0 {
+		k.PongWait = defaultPongWait
+	}
+	if k.PingPeriod <= 0 || k.PingPeriod >= k.PongWait {
+		// ping 周期必须小于 pong 等待，否则永远来不及收到 pong 就判超时。
+		k.PingPeriod = (k.PongWait * 9) / 10
+	}
+	return k
 }
 
 // WriteJSON 线程安全地发送 JSON 消息。
 func (c *Conn) WriteJSON(v any) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.applyWriteDeadline()
 	return c.Conn.WriteJSON(v)
 }
 
@@ -44,7 +84,66 @@ func (c *Conn) WriteJSON(v any) error {
 func (c *Conn) WriteSafeMessage(messageType int, data []byte) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.applyWriteDeadline()
 	return c.WriteMessage(messageType, data)
+}
+
+// applyWriteDeadline 在持锁状态下为下一次写设置超时（writeWait<=0 时不设置）。
+func (c *Conn) applyWriteDeadline() {
+	if c.writeWait > 0 {
+		_ = c.SetWriteDeadline(time.Now().Add(c.writeWait))
+	}
+}
+
+// StartKeepAlive 启用心跳保活：
+//   - 设置读超时为 PongWait，并在收到 pong 时自动续期。
+//   - 后台按 PingPeriod 周期发送 ping；写失败或调用方 StopKeepAlive 时退出。
+//   - 设置写超时为 WriteWait，避免慢客户端阻塞。
+//
+// 必须在进入读循环（ReadMessage）之前调用一次。多次调用只有第一次生效。
+// 返回的 stop 函数可显式停止心跳协程（通常用 defer 调用）。
+func (c *Conn) StartKeepAlive(cfg KeepAliveConfig) func() {
+	cfg = cfg.normalized()
+	c.keepAliveOnce.Do(func() {
+		c.writeWait = cfg.WriteWait
+		c.keepAliveStop = make(chan struct{})
+
+		// 读超时 + pong 续期：每次收到 pong 就把读 deadline 往后推。
+		_ = c.SetReadDeadline(time.Now().Add(cfg.PongWait))
+		c.SetPongHandler(func(string) error {
+			return c.SetReadDeadline(time.Now().Add(cfg.PongWait))
+		})
+
+		go c.pingLoop(cfg.PingPeriod)
+	})
+	return c.StopKeepAlive
+}
+
+// pingLoop 周期性发送 ping，直到写失败或被停止。
+func (c *Conn) pingLoop(period time.Duration) {
+	ticker := time.NewTicker(period)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-c.keepAliveStop:
+			return
+		case <-ticker.C:
+			if err := c.WriteSafeMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
+		}
+	}
+}
+
+// StopKeepAlive 停止心跳协程，幂等。
+func (c *Conn) StopKeepAlive() {
+	c.mu.Lock()
+	stop := c.keepAliveStop
+	c.keepAliveStop = nil
+	c.mu.Unlock()
+	if stop != nil {
+		close(stop)
+	}
 }
 
 // ReadJSON 从连接读取一条 JSON 消息并解码。
@@ -137,7 +236,31 @@ func HandlerWithUpgrader(h ConnHandler, upgrader websocket.Upgrader) gin.Handler
 			return
 		}
 		conn := &Conn{Conn: ws}
-		defer func() { _ = ws.Close() }()
+		defer func() {
+			conn.StopKeepAlive()
+			_ = ws.Close()
+		}()
+		h(conn)
+	}
+}
+
+// KeepAliveHandler 返回自动启用心跳保活的 WebSocket Handler。
+//
+// 与 Handler 的区别：在调用业务回调前自动 StartKeepAlive(cfg)，
+// 业务回调只需正常进入 ReadMessage 读循环即可享受 ping/pong 与超时保护。
+// 适合"长连接推送"场景，避免每个业务都重复写心跳样板代码。
+func KeepAliveHandler(h ConnHandler, cfg KeepAliveConfig) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ws, err := DefaultUpgrader.Upgrade(c.Writer, c.Request, nil)
+		if err != nil {
+			return
+		}
+		conn := &Conn{Conn: ws}
+		stop := conn.StartKeepAlive(cfg)
+		defer func() {
+			stop()
+			_ = ws.Close()
+		}()
 		h(conn)
 	}
 }
