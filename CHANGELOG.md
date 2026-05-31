@@ -2,6 +2,30 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.13.0] - 2026-05-31
+
+本版本为 **P3 交付能力批次**：补齐"完整业务模块范例"与生产级容器化能力，降低新项目落地门槛。
+
+### Added
+
+- **完整业务模块范例 `article`**（`app/article/`）：演示生产风格的四层分层架构
+  - `model/` — GORM 模型 + 状态常量与校验
+  - `repository/` — 数据访问层，封装带 `context` 的 GORM 查询，不含业务规则
+  - `service/` — 业务逻辑层，返回结构化 `*AppError`（模块码段 4060xx），无 HTTP 依赖，可被多入口复用
+  - `controller/` — HTTP 层，`BindAndValidate` 参数校验 + `pagination` 分页 + 统一响应
+  - 路由 `route/api.go` `registerArticleAPIV1` 演示**读写分离鉴权**：列表/详情公开，增删改与发布需 JWT
+  - 配套建表迁移 `20260531000000_create_articles_table.go`
+  - service 层 9 个、controller 层 7 个单元测试（基于内存 SQLite），覆盖创建/校验/查询/分页/发布冲突/软删除等路径
+- **生产级 `Dockerfile`**（多阶段构建）：静态编译（`CGO_ENABLED=0`，SQLite 用纯 Go 驱动）、非 root 用户运行、`/livez` 健康检查、`ldflags` 注入版本号；配套 `.dockerignore` 精简构建上下文
+- **Makefile 新增 `docker-build` / `docker-run`** 快捷目标
+
+### Changed
+
+- `README.md` 部署章节改为引用根目录内置的真实 `Dockerfile`，并新增"完整业务模块范例"说明
+- `.gitignore` 移除对 `.dockerignore` 的忽略（容器构建需要它纳入版本控制）
+
+---
+
 ## [3.12.1] - 2026-05-31
 
 本版本为 **P2 工程质量批次**：补齐测试盲区、消除重复与死代码、统一文档表述。无 API 与运行时行为变更。

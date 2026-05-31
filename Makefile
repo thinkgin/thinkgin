@@ -1,7 +1,7 @@
 # ThinkGin Makefile
 # 常用开发命令的统一入口，避免记忆冗长的 go 命令行参数。
 
-.PHONY: build run test lint vet fmt clean scaffold help
+.PHONY: build run test lint vet fmt clean scaffold help docker-build docker-run
 
 # 默认目标
 help: ## 显示帮助
@@ -39,6 +39,12 @@ tidy: ## 整理依赖
 scaffold: ## 生成模块骨架 (用法: make scaffold MOD=user)
 	@if [ -z "$(MOD)" ]; then echo "用法: make scaffold MOD=<module_name>"; exit 1; fi
 	go run ./cmd/scaffold new module $(MOD)
+
+docker-build: ## 构建应用镜像 (用法: make docker-build VERSION=3.x.y)
+	docker build --build-arg VERSION=$(or $(VERSION),dev) -t thinkgin:$(or $(VERSION),latest) .
+
+docker-run: ## 运行应用镜像 (需提供 JWT 密钥)
+	docker run --rm -p 8000:8000 -e THINKGIN_APP_JWT_SECRET=$(or $(JWT_SECRET),change-me-in-prod) thinkgin:$(or $(VERSION),latest)
 
 clean: ## 清理构建产物
 	rm -rf bin/ coverage.out coverage.html

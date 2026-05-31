@@ -1,0 +1,40 @@
+# 减小构建上下文体积，并避免把本地产物/敏感文件带进镜像。
+.git
+.github
+.gitignore
+.gitattributes
+
+# 构建产物与覆盖率
+bin/
+*.exe
+*.test
+*.out
+coverage
+coverage.*
+cov_*
+
+# 运行时与临时
+runtime/
+tmp/
+temp/
+*.log
+
+# 本地数据库文件
+database/*.db
+database/*.sqlite
+database/*.sqlite3
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 文档与本地报告（不需要进运行镜像）
+docs/REVIEW.md
+OPTIMIZATION-PROGRESS.md
+
+# Docker 自身
+Dockerfile
+.dockerignore
+docker-compose.yml

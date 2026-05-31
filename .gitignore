@@ -52,9 +52,6 @@ public/uploads/*
 # 依赖文件
 vendor/
 
-# Docker 相关
-.dockerignore
-
 # 页面
 html/
 

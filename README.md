@@ -4,10 +4,10 @@
 
 [![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Gin](https://img.shields.io/badge/Gin-v1.12-blue)](https://github.com/gin-gonic/gin)
-[![Version](https://img.shields.io/badge/Version-3.12.1-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-3.13.0-orange)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **当前版本 3.12.1** — 内置 18 个可插拔中间件 + **自定义中间件注册表**、ServiceContext 依赖注入、WebSocket、按路由粒度熔断器、atomic 配置热更新、slog 标准日志引擎等。  
+> **当前版本 3.13.0** — 内置 18 个可插拔中间件 + **自定义中间件注册表**、ServiceContext 依赖注入、WebSocket、按路由粒度熔断器、atomic 配置热更新、slog 标准日志引擎等。  
 > 完整更新日志见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
@@ -398,6 +398,32 @@ go run ./cmd/scaffold new module user
 # → app/user/view/.gitkeep
 ```
 
+## 完整业务模块范例（article）
+
+`app/article/` 是一个生产风格的 CRUD 模块范例，演示推荐的四层分层：
+
+```
+app/article/
+├── model/        # GORM 数据模型 + 状态常量
+├── repository/   # 数据访问层，封装 GORM 查询（带 context）
+├── service/      # 业务逻辑层，返回结构化 *AppError，无 HTTP 依赖
+└── controller/   # HTTP 层：BindAndValidate + 分页 + 统一响应
+```
+
+路由在 `route/api.go` 的 `registerArticleAPIV1` 注册，演示**读写分离鉴权**：
+
+| 方法 | 路径 | 鉴权 | 说明 |
+|------|------|------|------|
+| GET | `/api/v1/articles` | 公开 | 列表（支持 `?status=` `?author=` + 分页） |
+| GET | `/api/v1/articles/:id` | 公开 | 详情 |
+| POST | `/api/v1/articles` | JWT | 创建 |
+| PUT | `/api/v1/articles/:id` | JWT | 更新 |
+| POST | `/api/v1/articles/:id/publish` | JWT | 发布 |
+| DELETE | `/api/v1/articles/:id` | JWT | 删除（软删除） |
+
+对应建表迁移见 `app/database/migrations/20260531000000_create_articles_table.go`，
+service/controller 各带完整单元测试（基于内存 SQLite），可直接 copy 改造为自己的模块。
+
 ## 测试 & CI
 
 ```bash
@@ -417,25 +443,21 @@ GitHub Actions CI（`.github/workflows/ci.yml`）：
 
 ### Docker
 
-```dockerfile
-FROM golang:1.25-alpine AS builder
-WORKDIR /app
-COPY . .
-RUN go mod tidy && go build -o thinkgin
-
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
-WORKDIR /app
-COPY --from=builder /app/thinkgin .
-COPY --from=builder /app/config ./config
-EXPOSE 8000
-CMD ["./thinkgin"]
-```
+项目根目录已内置生产级多阶段 [`Dockerfile`](Dockerfile)（静态编译 / 非 root 运行 / 健康检查 / 版本注入），直接构建即可：
 
 ```bash
-docker build -t thinkgin:3.10.1 .
-docker run -p 8000:8000 thinkgin:3.10.1
+# 构建（可注入版本号）
+docker build --build-arg VERSION=3.13.0 -t thinkgin:3.13.0 .
+
+# 运行（生产务必通过环境变量注入 JWT 密钥）
+docker run -p 8000:8000 -e THINKGIN_APP_JWT_SECRET=<your-secret> thinkgin:3.13.0
+
+# 或使用 Makefile 快捷命令
+make docker-build VERSION=3.13.0
+make docker-run   VERSION=3.13.0 JWT_SECRET=<your-secret>
 ```
+
+镜像默认以 `release` 模式启动、非 root 用户运行，并内置 `/livez` 健康检查。
 
 ### Kubernetes
 
