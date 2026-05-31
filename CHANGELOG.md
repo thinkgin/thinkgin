@@ -2,6 +2,30 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.11.1] - 2026-05-31
+
+### Security
+
+本版本是一次**安全加固批次（P0）**，修复 5 项不安全的默认配置与高危操作。**包含若干默认行为变更，升级前请阅读下方迁移说明。**
+
+- **移除明文 JWT 密钥**：`config/app.yaml` 中硬编码的示例密钥（`23347$040412`）清空，改为通过环境变量 `THINKGIN_APP_JWT_SECRET` 注入
+  - `app/validate.go` 新增 `validateJWTSecret()` 启动校验：空密钥提示注入方式；命中弱口令黑名单（含历史泄漏密钥）强告警；长度 < 32 字节提示。仅告警不中断启动
+- **CORS 安全默认**：`config/middleware.yaml` 的 `allow_credentials` 由 `true` 改为 `false`，消除 `allow_origins=["*"]` + 携带凭证的危险组合
+- **Session Cookie 强制 HttpOnly**：`app/session/session.go` 中 Cookie 的 `HttpOnly` 恒为 `true`（即使配置为 false 也纠正），杜绝 XSS 窃取会话 ID
+- **RedisStore.Flush 限定前缀**：`app/cache/redis_store.go` 的 `Flush()` 由 `FlushDB`（清空整库）改为按 `prefix+"*"` 的 `SCAN`+`DEL`；`cache.prefix` 为空时拒绝执行，防止误清与 session/限流共用的整个 Redis DB
+- **/metrics 鉴权姿态加固**：`config/prometheus.yaml` 移除弱占位密码 `prom/changeme`；release 模式下暴露无鉴权 `/metrics` 时打印启动告警；`auth.enabled=true` 但凭据为空时禁用端点防误暴露；修正 `app/types.go` 中"鉴权未实现"的过时注释
+
+### Migration Notes
+
+从 v3.11.0 升级到 v3.11.1：
+
+1. **JWT**：默认密钥已清空。使用 JWT 的项目须通过环境变量 `THINKGIN_APP_JWT_SECRET=<至少32位随机串>` 注入后才能签发/校验（与原本"空密钥拒签"语义一致，仅移除了不安全的内置默认值）。
+2. **CORS**：默认不再携带凭证。若业务依赖跨域 Cookie/Authorization，需把 `config/middleware.yaml` 的 `allow_origins` 改为显式可信域名白名单，再把 `allow_credentials` 设回 `true`。
+3. **Session**：`cookie.http_only` 现在恒为 `true`，配置写 `false` 会被强制纠正。
+4. **缓存**：`RedisStore.Flush` 现在只清除 `cache.prefix` 前缀下的键；前缀为空时会返回错误而非清空全库，请确保 `config/cache.yaml` 设置了 `prefix`。
+
+---
+
 ## [3.11.0] - 2026-05-07
 
 ### Added

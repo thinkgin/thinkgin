@@ -1,14 +1,17 @@
 # 应用配置
 app:
   name: "ThinkGin"
-  version: "3.11.0"
+  version: "3.11.1"
   debug: true
   timezone: "Asia/Shanghai"
   locale: "zh-CN"
 
   # JWT 配置
   jwt:
-    secret: "23347$040412"
+    # 安全提示：不要把密钥明文写在这里并提交到仓库。
+    # 生产环境请通过环境变量注入：THINKGIN_APP_JWT_SECRET=<至少32位随机字符串>
+    # 留空时框架拒绝签发/校验 JWT（JWTIssue/JWTAuth 返回错误）。
+    secret: ""
     expire: 7200 # 2小时，单位秒
 
   # 分页配置

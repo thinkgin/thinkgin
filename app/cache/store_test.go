@@ -119,6 +119,15 @@ func TestMemoryStore_Flush(t *testing.T) {
 	}
 }
 
+func TestRedisStore_FlushRefusesEmptyPrefix(t *testing.T) {
+	// prefix 为空时 Flush 必须拒绝执行（避免 FlushDB 误清全库），
+	// 该分支在触达 Redis 之前就返回，因此无需真实连接即可验证。
+	rs := NewRedisStore(nil, "")
+	if err := rs.Flush(context.Background()); err == nil {
+		t.Fatal("Flush with empty prefix must return an error, not wipe the whole DB")
+	}
+}
+
 func TestNewStore_DefaultsToMemory(t *testing.T) {
 	old := app.Config
 	app.Config = &app.GlobalConfig{}

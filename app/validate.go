@@ -64,6 +64,41 @@ func validateConfigOn(cfg *GlobalConfig) {
 	if cfg.Log.File.Filename == "" {
 		cfg.Log.File.Filename = "system"
 	}
+
+	validateJWTSecret(cfg)
+}
+
+// knownWeakJWTSecrets 是历史版本中泄漏过或属于明显弱口令的 JWT 密钥黑名单。
+// 命中时强提示用户更换，避免拿示例密钥直接上生产。
+var knownWeakJWTSecrets = map[string]struct{}{
+	"23347$040412": {}, // v3.11.0 之前 config/app.yaml 中的硬编码示例密钥
+	"secret":       {},
+	"changeme":     {},
+	"your-secret":  {},
+}
+
+// minJWTSecretLen 是推荐的 JWT 密钥最小长度（HS256 建议 >= 32 字节）。
+const minJWTSecretLen = 32
+
+// validateJWTSecret 校验 JWT 密钥的安全性，仅打印告警、不修改配置也不中断启动。
+// 设计取舍：JWTIssue/JWTAuth 在密钥为空时本就拒绝工作，这里只做"早发现"的提示。
+func validateJWTSecret(cfg *GlobalConfig) {
+	secret := strings.TrimSpace(cfg.App.JWT.Secret)
+	if secret == "" {
+		// 空密钥是安全的（拒绝签发），仅在需要 JWT 时提示如何注入。
+		fmt.Println("[config] 提示：app.jwt.secret 为空，JWT 签发/校验已禁用。" +
+			"如需启用，请通过环境变量 THINKGIN_APP_JWT_SECRET 注入密钥。")
+		return
+	}
+	if _, weak := knownWeakJWTSecrets[secret]; weak {
+		fmt.Println("[config] 警告：检测到弱/示例 JWT 密钥，存在 token 伪造风险！" +
+			"请立即更换为高强度随机值，并通过环境变量 THINKGIN_APP_JWT_SECRET 注入。")
+		return
+	}
+	if len(secret) < minJWTSecretLen {
+		fmt.Printf("[config] 警告：app.jwt.secret 长度为 %d，建议 >= %d 字节以保证 HS256 安全强度。\n",
+			len(secret), minJWTSecretLen)
+	}
 }
 
 // isValidLogLevel 校验日志级别名称是否合法（与 logrus/slog 兼容的通用级别集合）。

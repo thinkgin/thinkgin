@@ -266,7 +266,8 @@ type TraceConfig struct {
 }
 
 // PrometheusConfig 对应 config/prometheus.yaml。
-// NOTE: Auth 字段为占位，当前 /metrics 端点未强制鉴权。
+// Auth 字段控制 /metrics 端点的 Basic Auth：enabled=true 时由
+// middleware.PrometheusHandler 强制鉴权（凭据取 Username/Password）。
 type PrometheusConfig struct {
 	Enabled        bool                   `yaml:"enabled"`
 	Path           string                 `yaml:"path"`

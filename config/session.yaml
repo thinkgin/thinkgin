@@ -17,6 +17,8 @@ session:
   cookie:
     path: "/"
     domain: ""
+    # secure: 仅通过 HTTPS 传输 Cookie。本地 HTTP 开发设为 false；生产部署务必置 true。
     secure: false
+    # http_only: 已由框架强制为 true（Session ID 不允许被 JS 读取），此处配置仅作说明。
     http_only: true
     same_site: "lax" # lax / strict / none

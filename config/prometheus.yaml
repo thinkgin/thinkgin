@@ -29,7 +29,9 @@ prometheus:
 
   # /metrics 端点 Basic Auth 鉴权（生产环境强烈建议启用）。
   # 启用后，Prometheus 采集器的 scrape_configs 需要配置对应的 basic_auth。
+  # 注意：不要在此明文写生产密码并提交仓库，建议仅在内网/受控环境暴露 /metrics，
+  # 或通过反向代理（Nginx/Ingress）统一做鉴权与网络隔离。
   auth:
     enabled: false
-    username: "prom"
-    password: "changeme"
+    username: ""
+    password: ""

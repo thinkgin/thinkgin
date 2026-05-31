@@ -4,10 +4,10 @@
 
 [![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Gin](https://img.shields.io/badge/Gin-v1.12-blue)](https://github.com/gin-gonic/gin)
-[![Version](https://img.shields.io/badge/Version-3.11.0-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-3.11.1-orange)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **当前版本 3.11.0** — 内置 18 个可插拔中间件 + **自定义中间件注册表**、ServiceContext 依赖注入、WebSocket、按路由粒度熔断器、atomic 配置热更新、slog 标准日志引擎等。  
+> **当前版本 3.11.1** — 内置 18 个可插拔中间件 + **自定义中间件注册表**、ServiceContext 依赖注入、WebSocket、按路由粒度熔断器、atomic 配置热更新、slog 标准日志引擎等。  
 > 完整更新日志见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---

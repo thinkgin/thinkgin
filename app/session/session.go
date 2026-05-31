@@ -109,10 +109,12 @@ func Init() error {
 		lifetime: lifetime,
 		name:     firstNonEmpty(sc.Name, "THINKGIN_SESSION"),
 		cookie: cookieConfig{
-			Path:     firstNonEmpty(sc.Cookie.Path, "/"),
-			Domain:   sc.Cookie.Domain,
-			Secure:   sc.Cookie.Secure,
-			HttpOnly: sc.Cookie.HttpOnly,
+			Path:   firstNonEmpty(sc.Cookie.Path, "/"),
+			Domain: sc.Cookie.Domain,
+			Secure: sc.Cookie.Secure,
+			// 安全默认：Session ID 绝不应被 JS 读取，强制 HttpOnly。
+			// 即便配置缺省（零值 false），也回正为 true，杜绝 XSS 窃取会话。
+			HttpOnly: true,
 			SameSite: firstNonEmpty(sc.Cookie.SameSite, "lax"),
 		},
 	}
