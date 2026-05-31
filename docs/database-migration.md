@@ -1,21 +1,57 @@
-# 数据库迁移指南（Goose）
+# 数据库迁移指南
 
-ThinkGin **不内置**数据库迁移工具。本页给出推荐做法。
+ThinkGin 提供**两种**迁移方案，按团队规模与偏好二选一：
 
-## 为什么不用 GORM 的 `AutoMigrate`
+| 方案 | 适用场景 | 入口 |
+|------|----------|------|
+| **内置迁移**（默认推荐） | 中小项目、Go 函数式迁移、想要零外部依赖 | `go run main.go migrate up/down/status` |
+| **外部 goose** | 偏好 SQL 迁移文件、已有 goose 工作流、需要更丰富的 CLI | `goose` CLI |
 
-`db.AutoMigrate(&User{})` 适合**开发期快速试错**，但不能上生产：
+> 两者互斥使用：选定一种即可，不要混用同一套表。下面先讲内置方案，再讲 goose。
+
+---
+
+## 方案一：内置迁移（`cmd migrate`）
+
+迁移以 **Go 函数**注册，类型安全，随二进制分发，无需额外安装工具。
+
+### 注册迁移
+
+在 `app/database/migrations/` 下新增文件，通过 `registry.go` 的 `All()` 汇总（可用脚手架生成）：
+
+```bash
+go run ./cmd/scaffold new migration create_posts_table
+# → app/database/migrations/<timestamp>_create_posts_table.go
+```
+
+### 执行
+
+```bash
+go run main.go migrate up        # 执行所有未应用的迁移
+go run main.go migrate down 1    # 回退最后 1 个迁移
+go run main.go migrate status    # 查看每个迁移的 applied/pending 状态
+```
+
+迁移版本记录在 `_migrations` 表中，按版本号字典序排序执行。
+
+---
+
+## 方案二：外部 goose
+
+如果团队偏好 SQL 迁移文件或已有 goose 工作流，可绕过内置迁移直接用 goose。
+
+## 为什么 `AutoMigrate` 不适合生产
+
+无论选哪种方案，都**不要**用 `db.AutoMigrate(&User{})` 上生产。它适合**开发期快速试错**，但：
 
 - **无法删字段**：删了结构体里的字段，数据库列照样留着
 - **无法改列类型**：类型不兼容时直接报错，无回退方案
 - **没有版本号**：不知道哪台实例跑过哪一版，回滚全凭人脑
 - **无法做数据迁移**：只能改 schema，不能顺便 `UPDATE` 旧数据
 
-这些能力**不是框架该解决的**，已有成熟工具。
-
 ---
 
-## 推荐工具：pressly/goose
+## goose 工具
 
 [`github.com/pressly/goose/v3`](https://github.com/pressly/goose) 是目前 Go 社区使用最广的迁移工具，支持 SQL 和 Go 两种迁移文件格式。
 

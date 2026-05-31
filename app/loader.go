@@ -13,55 +13,14 @@ import (
 // defaultConfigDir 是相对工作目录的默认配置根。
 const defaultConfigDir = "config"
 
-// LoadConfigFromDir 读取指定目录下的 13 份 YAML 并填充到全局 Config。
-// 单个文件加载失败会记录错误但不中断整体流程，使用默认值兜底。
-// 返回聚合错误（非空时表示部分文件加载失败，但配置仍可使用）。
-func LoadConfigFromDir(dir string) error {
-	if Config == nil {
-		Config = &GlobalConfig{}
-	}
-
-	loaders := []struct {
-		file string
-		fn   func(string) error
-	}{
-		{"app.yaml", func(p string) error { return loadInto("app", p, &Config.App) }},
-		{"server.yaml", func(p string) error { return loadInto("server", p, &Config.Server) }},
-		{"database.yaml", func(p string) error { return loadInto("database", p, &Config.Database) }},
-		{"cache.yaml", func(p string) error { return loadInto("cache", p, &Config.Cache) }},
-		{"log.yaml", func(p string) error { return loadInto("log", p, &Config.Log) }},
-		{"session.yaml", func(p string) error { return loadInto("session", p, &Config.Session) }},
-		{"middleware.yaml", func(p string) error { return loadInto("middleware", p, &Config.Middleware) }},
-		{"route.yaml", func(p string) error { return loadInto("route", p, &Config.Route) }},
-		{"view.yaml", func(p string) error { return loadInto("view", p, &Config.View) }},
-		{"filesystem.yaml", func(p string) error { return loadInto("filesystem", p, &Config.Filesystem) }},
-		{"lang.yaml", func(p string) error { return loadInto("lang", p, &Config.Lang) }},
-		{"trace.yaml", func(p string) error { return loadInto("trace", p, &Config.Trace) }},
-		{"prometheus.yaml", func(p string) error { return loadInto("prometheus", p, &Config.Prometheus) }},
-	}
-
-	var errs []error
-	for _, l := range loaders {
-		path := filepath.Join(dir, l.file)
-		if err := l.fn(path); err != nil {
-			errs = append(errs, fmt.Errorf("%s: %w", l.file, err))
-		}
-	}
-
-	return errors.Join(errs...)
-}
-
-// LoadConfig 为了向后兼容保留，使用默认目录。
-func LoadConfig() {
-	_ = LoadConfigFromDir(defaultConfigDir)
-}
-
-// loadNewConfigFromDir 构建一个全新的 GlobalConfig 对象并加载指定目录的 YAML。
-// 与 LoadConfigFromDir 不同，本函数不修改全局变量，适用于热更新的"构建-替换"模式。
-func loadNewConfigFromDir(dir string) (*GlobalConfig, error) {
-	cfg := &GlobalConfig{}
-
-	loaders := []struct {
+// buildLoaders 返回针对指定 cfg 的 13 个 YAML 加载器列表。
+// LoadConfigFromDir（写全局）与 loadNewConfigFromDir（构建新对象）共用此函数，
+// 避免维护两份逐行重复的加载表导致漏改。
+func buildLoaders(cfg *GlobalConfig) []struct {
+	file string
+	fn   func(string) error
+} {
+	return []struct {
 		file string
 		fn   func(string) error
 	}{
@@ -79,7 +38,13 @@ func loadNewConfigFromDir(dir string) (*GlobalConfig, error) {
 		{"trace.yaml", func(p string) error { return loadInto("trace", p, &cfg.Trace) }},
 		{"prometheus.yaml", func(p string) error { return loadInto("prometheus", p, &cfg.Prometheus) }},
 	}
+}
 
+// runLoaders 依次执行 loaders，聚合所有失败的文件错误（不中断）。
+func runLoaders(dir string, loaders []struct {
+	file string
+	fn   func(string) error
+}) error {
 	var errs []error
 	for _, l := range loaders {
 		path := filepath.Join(dir, l.file)
@@ -87,8 +52,29 @@ func loadNewConfigFromDir(dir string) (*GlobalConfig, error) {
 			errs = append(errs, fmt.Errorf("%s: %w", l.file, err))
 		}
 	}
+	return errors.Join(errs...)
+}
 
-	return cfg, errors.Join(errs...)
+// LoadConfigFromDir 读取指定目录下的 13 份 YAML 并填充到全局 Config。
+// 单个文件加载失败会记录错误但不中断整体流程，使用默认值兜底。
+// 返回聚合错误（非空时表示部分文件加载失败，但配置仍可使用）。
+func LoadConfigFromDir(dir string) error {
+	if Config == nil {
+		Config = &GlobalConfig{}
+	}
+	return runLoaders(dir, buildLoaders(Config))
+}
+
+// LoadConfig 为了向后兼容保留，使用默认目录。
+func LoadConfig() {
+	_ = LoadConfigFromDir(defaultConfigDir)
+}
+
+// loadNewConfigFromDir 构建一个全新的 GlobalConfig 对象并加载指定目录的 YAML。
+// 与 LoadConfigFromDir 不同，本函数不修改全局变量，适用于热更新的"构建-替换"模式。
+func loadNewConfigFromDir(dir string) (*GlobalConfig, error) {
+	cfg := &GlobalConfig{}
+	return cfg, runLoaders(dir, buildLoaders(cfg))
 }
 
 // loadInto 把 YAML 文件反序列化到 *T。

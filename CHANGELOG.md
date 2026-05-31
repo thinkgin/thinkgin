@@ -2,6 +2,25 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.12.1] - 2026-05-31
+
+本版本为 **P2 工程质量批次**：补齐测试盲区、消除重复与死代码、统一文档表述。无 API 与运行时行为变更。
+
+### Added
+
+- **`cmd` 包单元测试**（`cmd/cmd_test.go`）：覆盖根命令元信息、全部子命令注册（serve/version/config/migrate/cron/swagger）、`version` 命令输出、`migrate` 子命令结构（up/down/status）、以及通过 `Execute` 走 version 路径。补齐了此前完全无测试的 CLI 装配层
+
+### Changed
+
+- **统一数据库迁移文档**（`docs/database-migration.md`）：原文档声称"不内置迁移工具"，与实际存在的 `cmd migrate`（内置 Go 函数式迁移）矛盾。改为明确给出"内置迁移（默认推荐）"与"外部 goose（可选）"两种方案的对照与各自用法
+- **消除 `loader.go` 重复**：`LoadConfigFromDir` 与 `loadNewConfigFromDir` 此前各维护一份逐行重复的 13 项 YAML 加载表，提取 `buildLoaders(cfg)` + `runLoaders(dir, loaders)` 共用，避免漏改
+
+### Removed
+
+- **删除死代码 `LoggerToFile`**（`extend/middleware/logger.go`）：该函数全仓库无任何引用，且使用 `RequestURI`（含 query string，有日志泄漏风险），已被 `AccessLogger`（用路由模板）完全取代
+
+---
+
 ## [3.12.0] - 2026-05-31
 
 本版本为 **P1 正确性加固批次**：修复熔断器并发/低流量缺陷、缓存击穿与 goroutine 泄漏，并消除多处文档与代码不一致。
