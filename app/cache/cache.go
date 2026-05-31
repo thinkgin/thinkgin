@@ -31,7 +31,10 @@ var ErrNotFound = errors.New("cache: store not found")
 var ErrCacheMiss = errors.New("cache: miss")
 
 // NewStore 根据缓存名称创建统一的 Store 接口。
-// driver=redis 时复用已建立的连接；driver=memory 或其他则返回内存实现。
+// driver=redis 时复用已建立的连接；driver=memory 或其他则返回共享的内存实现。
+//
+// 注意：内存 Store 返回的是进程级单例（见 sharedMemoryStore），
+// 避免每次调用都新建一个带后台 GC goroutine 的实例而造成 goroutine 泄漏。
 func NewStore(name string) Store {
 	cfg := app.GetConfig()
 
@@ -46,8 +49,8 @@ func NewStore(name string) Store {
 		}
 	}
 
-	// 默认回退到内存实现
-	return NewMemoryStore()
+	// 默认回退到共享的内存实现（单例，不重复启动 GC goroutine）。
+	return getSharedMemoryStore()
 }
 
 // DefaultStore 返回 config.cache.default 指向的 Store 接口。
@@ -56,7 +59,23 @@ func DefaultStore() Store {
 	if cfg != nil && cfg.Cache.Default != "" {
 		return NewStore(cfg.Cache.Default)
 	}
-	return NewMemoryStore()
+	return getSharedMemoryStore()
+}
+
+// sharedMemoryStore 是进程级共享的内存缓存单例。
+// RedisStore 由 cache.Get 管理连接生命周期，而 MemoryStore 自带后台 GC goroutine，
+// 若每次 NewStore 都新建则会泄漏 goroutine。这里用 sync.Once 保证全进程只有一个实例。
+var (
+	sharedMemoryOnce  sync.Once
+	sharedMemoryStore *MemoryStore
+)
+
+// getSharedMemoryStore 惰性创建并返回进程级共享的 MemoryStore 单例。
+func getSharedMemoryStore() *MemoryStore {
+	sharedMemoryOnce.Do(func() {
+		sharedMemoryStore = NewMemoryStore()
+	})
+	return sharedMemoryStore
 }
 
 // pingTimeout 限定 Init 阶段 Ping 的最大耗时，避免 Redis 不可达时阻塞启动。

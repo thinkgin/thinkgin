@@ -8,6 +8,8 @@ import (
 	"context"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 )
 
 // memoryItem 内存缓存条目。
@@ -25,6 +27,7 @@ type MemoryStore struct {
 	mu    sync.RWMutex
 	items map[string]*memoryItem
 	done  chan struct{}
+	sf    singleflight.Group // 防缓存击穿：同 key 的并发回源合并为一次
 }
 
 // NewMemoryStore 创建内存缓存并启动后台 GC。
@@ -84,16 +87,31 @@ func (ms *MemoryStore) Has(_ context.Context, key string) (bool, error) {
 	return true, nil
 }
 
+// Remember 读取缓存，未命中时回源并写回。
+//
+// 使用 singleflight 防止缓存击穿：同一 key 的并发未命中只会执行一次 fn，
+// 其余调用方共享同一结果，避免缓存失效瞬间大量请求同时穿透到后端。
 func (ms *MemoryStore) Remember(ctx context.Context, key string, ttl time.Duration, fn func() (string, error)) (string, error) {
 	if v, err := ms.Get(ctx, key); err == nil {
 		return v, nil
 	}
-	v, err := fn()
+
+	v, err, _ := ms.sf.Do(key, func() (interface{}, error) {
+		// 进入 singleflight 后二次检查：可能在排队期间已被其他请求填充。
+		if cached, gerr := ms.Get(ctx, key); gerr == nil {
+			return cached, nil
+		}
+		val, ferr := fn()
+		if ferr != nil {
+			return "", ferr
+		}
+		_ = ms.Set(ctx, key, val, ttl)
+		return val, nil
+	})
 	if err != nil {
 		return "", err
 	}
-	_ = ms.Set(ctx, key, v, ttl)
-	return v, nil
+	return v.(string), nil
 }
 
 func (ms *MemoryStore) Flush(_ context.Context) error {

@@ -24,6 +24,11 @@ import (
 type CircuitBreakerConfig struct {
 	// WindowSize 滑动窗口大小（最近多少个请求用于计算错误率）。
 	WindowSize int
+	// MinRequests 触发熔断所需的最小样本数。
+	// 解决"低流量接口永不熔断"的问题：窗口未填满时，只要样本数达到 MinRequests
+	// 且错误率超阈值即可熔断。为 0 时回退为 WindowSize（保持旧行为，向后兼容）。
+	// 实际取值会被 cap 到 WindowSize，避免设置过大导致永不触发。
+	MinRequests int
 	// ErrorThresholdPercent 错误率阈值（0-100）。超过则熔断。
 	ErrorThresholdPercent int
 	// CooldownDuration Open 状态的冷却时间，之后进入 HalfOpen。
@@ -38,6 +43,7 @@ type CircuitBreakerConfig struct {
 func DefaultCircuitBreakerConfig() CircuitBreakerConfig {
 	return CircuitBreakerConfig{
 		WindowSize:            100,
+		MinRequests:           10, // 低流量下也能熔断：累计 10 个样本即可判定
 		ErrorThresholdPercent: 50,
 		CooldownDuration:      10 * time.Second,
 		HalfOpenMaxRequests:   5,
@@ -79,6 +85,10 @@ type circuitBreaker struct {
 }
 
 func newCircuitBreaker(cfg CircuitBreakerConfig) *circuitBreaker {
+	// 归一化 MinRequests：0 时回退为 WindowSize（旧行为），并 cap 到 WindowSize。
+	if cfg.MinRequests <= 0 || cfg.MinRequests > cfg.WindowSize {
+		cfg.MinRequests = cfg.WindowSize
+	}
 	return &circuitBreaker{
 		cfg:    cfg,
 		state:  cbClosed,
@@ -87,6 +97,10 @@ func newCircuitBreaker(cfg CircuitBreakerConfig) *circuitBreaker {
 }
 
 // allow 判断是否放行请求。
+//
+// 重要：HalfOpen 分支在准入时即占用一个试探配额（halfOpenTotal++），
+// 而非等到 record() 才计数。否则高并发下大量请求会在 record 之前同时
+// 通过 `halfOpenTotal < max` 判断，导致远超 HalfOpenMaxRequests 的请求涌入。
 func (cb *circuitBreaker) allow() bool {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
@@ -97,16 +111,24 @@ func (cb *circuitBreaker) allow() bool {
 	case cbOpen:
 		if time.Since(cb.openedAt) >= cb.cfg.CooldownDuration {
 			cb.toHalfOpen()
+			cb.halfOpenTotal++ // 转入 HalfOpen 后立即占用第一个试探名额
 			return true
 		}
 		return false
 	case cbHalfOpen:
-		return cb.halfOpenTotal < cb.cfg.HalfOpenMaxRequests
+		if cb.halfOpenTotal < cb.cfg.HalfOpenMaxRequests {
+			cb.halfOpenTotal++ // 准入即占用名额，杜绝并发超发
+			return true
+		}
+		return false
 	}
 	return true
 }
 
 // record 记录请求结果。
+//
+// 注意：HalfOpen 的 halfOpenTotal 已在 allow() 准入时自增，此处不再重复计数，
+// 只统计成功/失败并据此切换状态。
 func (cb *circuitBreaker) record(isError bool) {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
@@ -118,11 +140,12 @@ func (cb *circuitBreaker) record(isError bool) {
 		if cb.count < cb.cfg.WindowSize {
 			cb.count++
 		}
-		if cb.count >= cb.cfg.WindowSize && cb.errorRate() >= cb.cfg.ErrorThresholdPercent {
+		// 样本数达到 MinRequests（而非必须填满窗口）且错误率超阈值即熔断，
+		// 解决低流量接口永远凑不满窗口、从而永不熔断的问题。
+		if cb.count >= cb.cfg.MinRequests && cb.errorRate() >= cb.cfg.ErrorThresholdPercent {
 			cb.toOpen()
 		}
 	case cbHalfOpen:
-		cb.halfOpenTotal++
 		if isError {
 			cb.halfOpenFailures++
 			cb.toOpen()

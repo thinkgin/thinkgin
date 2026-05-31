@@ -2,6 +2,31 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 和 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
+## [3.12.0] - 2026-05-31
+
+本版本为 **P1 正确性加固批次**：修复熔断器并发/低流量缺陷、缓存击穿与 goroutine 泄漏，并消除多处文档与代码不一致。
+
+### Added
+
+- **熔断器最小请求数 `MinRequests`**（`extend/middleware/circuitbreaker.go`）：新增配置项，样本数达到 `MinRequests` 且错误率超阈值即可熔断，无需填满整个滑动窗口
+  - 默认 10，为 0 时回退为 `WindowSize`（保持旧行为，向后兼容），取值自动 cap 到 `WindowSize`
+  - 解决"低流量接口永远凑不满 `WindowSize` 个样本，从而永不熔断"的问题
+
+### Fixed
+
+- **熔断器 HalfOpen 并发准入竞态**：`allow()` 在 HalfOpen 准入时即占用试探配额（`halfOpenTotal++`），不再等到 `record()` 才计数。修复高并发下大量请求同时通过 `halfOpenTotal < max` 判断、导致远超 `HalfOpenMaxRequests` 的请求涌入的问题
+- **缓存击穿（cache stampede）**：`MemoryStore.Remember` / `RedisStore.Remember` 接入 `golang.org/x/sync/singleflight`，同一 key 的并发未命中合并为一次回源（含二次检查），避免缓存失效瞬间大量请求穿透到后端
+- **内存缓存 goroutine 泄漏**：`cache.NewStore` / `cache.DefaultStore` 的内存实现改为进程级共享单例（`sync.Once`），不再每次调用都新建一个带后台 GC goroutine 的 `MemoryStore`
+
+### Changed
+
+- **secure_headers 文档校准**：包注释不再声称默认启用 `Content-Security-Policy`（实际未启用，CSP 与具体页面强相关），改为说明如何通过 `middleware.config.secure_headers` 按需配置
+- **gzip 中间件落实流式跳过**：现在会跳过 SSE（`text/event-stream`）与已设置 `Content-Encoding` 的响应，与注释承诺一致；移除未实现的 `minSize` 死注释
+- **validation 字段名使用真实 json tag**：通过 validator 的 `RegisterTagNameFunc`，字段级错误信息中的字段名取自 `json` tag（正确支持 `snake_case`），替换原先"仅首字母小写"的错误实现
+- `golang.org/x/sync` 从间接依赖提升为直接依赖
+
+---
+
 ## [3.11.1] - 2026-05-31
 
 ### Security

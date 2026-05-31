@@ -1,7 +1,11 @@
 // 本文件提供 Gzip 响应压缩中间件。
 //
-// 仅在客户端 Accept-Encoding 包含 gzip 且响应体大于 minSize 时压缩。
-// 对 SSE、WebSocket 等流式响应自动跳过。
+// 仅在客户端 Accept-Encoding 包含 gzip 时压缩。
+// 对 SSE（text/event-stream）等流式响应、以及已设置 Content-Encoding 的响应自动跳过，
+// 避免破坏流式语义或二次压缩。
+//
+// 说明：本实现为流式直压（不缓冲整个响应体），因此不做"小于 minSize 不压缩"的阈值判断。
+// 如需基于大小的阈值压缩，需引入响应缓冲，属后续可选优化。
 package middleware
 
 import (
@@ -13,10 +17,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-
-// gzipMinSize 小于此字节数的响应不压缩，避免小包膨胀。
-// 目前暂未启用阈值判断，预留给后续版本。
-// const gzipMinSize = 1024
 
 var gzipPool = sync.Pool{
 	New: func() any {
@@ -43,6 +43,18 @@ func (g *gzipWriter) WriteString(s string) (int, error) {
 func Gzip() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !strings.Contains(c.GetHeader("Accept-Encoding"), "gzip") {
+			c.Next()
+			return
+		}
+
+		// 跳过 SSE 流式响应：压缩会破坏 EventSource 的实时推送语义。
+		if strings.Contains(c.GetHeader("Accept"), "text/event-stream") {
+			c.Next()
+			return
+		}
+
+		// 已声明 Content-Encoding 的响应（例如上游已压缩）不再二次压缩。
+		if c.Writer.Header().Get("Content-Encoding") != "" {
 			c.Next()
 			return
 		}

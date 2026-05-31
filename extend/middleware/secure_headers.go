@@ -5,9 +5,17 @@
 //   - X-Frame-Options: DENY
 //   - X-XSS-Protection: 1; mode=block
 //   - Referrer-Policy: strict-origin-when-cross-origin
-//   - Content-Security-Policy: default-src 'self'
 //
-// 各头部可通过 middleware.config.secure_headers 按需覆盖或禁用。
+// 注意：Content-Security-Policy 默认**不启用**——CSP 策略与具体页面强相关，
+// 不合适的默认值（如 default-src 'self'）会直接拦掉 CDN/内联脚本等常见资源。
+// 需要时通过 middleware.config.secure_headers 显式配置，例如：
+//
+//	middleware:
+//	  config:
+//	    secure_headers:
+//	      Content-Security-Policy: "default-src 'self'"
+//
+// 各头部均可通过 middleware.config.secure_headers 覆盖；值为空字符串时跳过该头。
 package middleware
 
 import (

@@ -10,12 +10,14 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/singleflight"
 )
 
 // RedisStore 基于 Redis 的缓存实现。
 type RedisStore struct {
 	client *redis.Client
-	prefix string // key 前缀，避免多应用共用 Redis 时冲突
+	prefix string             // key 前缀，避免多应用共用 Redis 时冲突
+	sf     singleflight.Group // 防缓存击穿：本实例内同 key 的并发回源合并为一次
 }
 
 // NewRedisStore 创建 Redis 缓存。prefix 会自动追加到所有 key 前面。
@@ -61,16 +63,31 @@ func (rs *RedisStore) Has(ctx context.Context, key string) (bool, error) {
 	return n > 0, nil
 }
 
+// Remember 读取缓存，未命中时回源并写回。
+//
+// 使用 singleflight 在单实例内合并同 key 的并发回源，缓解缓存击穿。
+// 注意：这是进程内去重，多实例部署下各实例仍可能各回源一次（属可接受的弱化保证）。
 func (rs *RedisStore) Remember(ctx context.Context, key string, ttl time.Duration, fn func() (string, error)) (string, error) {
 	if v, err := rs.Get(ctx, key); err == nil {
 		return v, nil
 	}
-	v, err := fn()
+
+	v, err, _ := rs.sf.Do(key, func() (interface{}, error) {
+		// 二次检查：排队期间可能已被其他请求填充。
+		if cached, gerr := rs.Get(ctx, key); gerr == nil {
+			return cached, nil
+		}
+		val, ferr := fn()
+		if ferr != nil {
+			return "", ferr
+		}
+		_ = rs.Set(ctx, key, val, ttl)
+		return val, nil
+	})
 	if err != nil {
 		return "", err
 	}
-	_ = rs.Set(ctx, key, v, ttl)
-	return v, nil
+	return v.(string), nil
 }
 
 // Flush 只清除本 Store 前缀下的键，而非整个 Redis 逻辑库。

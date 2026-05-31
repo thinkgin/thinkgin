@@ -24,13 +24,39 @@ package middleware
 
 import (
 	"errors"
+	"reflect"
 	"strings"
+	"sync"
 
 	apperrors "thinkgin/app/errors"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 )
+
+// registerTagNameOnce 保证向 Gin 的 validator 注册 json tag 解析只执行一次。
+var registerTagNameOnce sync.Once
+
+// useJSONFieldNames 让 validator 的 fe.Field() 直接返回 struct 的 json tag 名，
+// 从而错误信息里的字段名与请求/响应里的 JSON 字段一致（含 snake_case）。
+// 仅作用于 Gin 默认的 validator 引擎；非该引擎时静默跳过。
+func useJSONFieldNames() {
+	registerTagNameOnce.Do(func() {
+		v, ok := binding.Validator.Engine().(*validator.Validate)
+		if !ok {
+			return
+		}
+		v.RegisterTagNameFunc(func(field reflect.StructField) string {
+			// 取 json tag 的第一段（去掉 ",omitempty" 等选项）。
+			tag := strings.SplitN(field.Tag.Get("json"), ",", 2)[0]
+			if tag == "-" || tag == "" {
+				return field.Name
+			}
+			return tag
+		})
+	})
+}
 
 // FieldError 单个字段的校验错误详情。
 type FieldError struct {
@@ -42,6 +68,7 @@ type FieldError struct {
 // BindAndValidate 绑定请求参数并校验，失败时自动向 gin.Context 写入 422 响应。
 // 返回 nil 表示绑定+校验成功；返回 error 表示已响应客户端，调用方应直接 return。
 func BindAndValidate(c *gin.Context, obj interface{}) error {
+	useJSONFieldNames()
 	if err := c.ShouldBind(obj); err != nil {
 		var ve validator.ValidationErrors
 		if errors.As(err, &ve) {
@@ -65,10 +92,10 @@ func BindAndValidate(c *gin.Context, obj interface{}) error {
 	return nil
 }
 
-// jsonFieldName 尝试从 struct tag 中提取 JSON 字段名，回退到 Field()。
+// jsonFieldName 返回字段名。配合 useJSONFieldNames 注册后，
+// fe.Field() 已是 json tag 名；此处直接返回，保留函数以集中字段名取用逻辑。
 func jsonFieldName(fe validator.FieldError) string {
-	name := fe.Field()
-	return strings.ToLower(name[:1]) + name[1:]
+	return fe.Field()
 }
 
 // translateFieldError 将 validator 错误翻译为中文消息。
