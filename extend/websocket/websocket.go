@@ -34,8 +34,6 @@ const (
 	defaultWriteWait = 10 * time.Second
 	// defaultPongWait 读取下一条消息（含 pong）的最大等待时间，超时视为连接已死。
 	defaultPongWait = 60 * time.Second
-	// defaultPingPeriod 主动发送 ping 的周期，必须小于 pongWait（留出 pong 往返余量）。
-	defaultPingPeriod = (defaultPongWait * 9) / 10
 )
 
 // Conn 包装 gorilla/websocket.Conn，提供便捷方法。
@@ -45,6 +43,7 @@ type Conn struct {
 	writeWait time.Duration
 
 	keepAliveOnce sync.Once
+	stopOnce      sync.Once
 	keepAliveStop chan struct{}
 }
 
@@ -105,8 +104,11 @@ func (c *Conn) applyWriteDeadline() {
 func (c *Conn) StartKeepAlive(cfg KeepAliveConfig) func() {
 	cfg = cfg.normalized()
 	c.keepAliveOnce.Do(func() {
+		c.mu.Lock()
 		c.writeWait = cfg.WriteWait
 		c.keepAliveStop = make(chan struct{})
+		stop := c.keepAliveStop
+		c.mu.Unlock()
 
 		// 读超时 + pong 续期：每次收到 pong 就把读 deadline 往后推。
 		_ = c.SetReadDeadline(time.Now().Add(cfg.PongWait))
@@ -114,18 +116,20 @@ func (c *Conn) StartKeepAlive(cfg KeepAliveConfig) func() {
 			return c.SetReadDeadline(time.Now().Add(cfg.PongWait))
 		})
 
-		go c.pingLoop(cfg.PingPeriod)
+		// 把 stop channel 作为参数传入，pingLoop 不读结构体字段，避免与 StopKeepAlive 竞争。
+		go c.pingLoop(cfg.PingPeriod, stop)
 	})
 	return c.StopKeepAlive
 }
 
 // pingLoop 周期性发送 ping，直到写失败或被停止。
-func (c *Conn) pingLoop(period time.Duration) {
+// stop 由调用方传入，循环内不再访问 c.keepAliveStop，消除并发读写。
+func (c *Conn) pingLoop(period time.Duration, stop <-chan struct{}) {
 	ticker := time.NewTicker(period)
 	defer ticker.Stop()
 	for {
 		select {
-		case <-c.keepAliveStop:
+		case <-stop:
 			return
 		case <-ticker.C:
 			if err := c.WriteSafeMessage(websocket.PingMessage, nil); err != nil {
@@ -136,14 +140,16 @@ func (c *Conn) pingLoop(period time.Duration) {
 }
 
 // StopKeepAlive 停止心跳协程，幂等。
+// 使用 sync.Once 保证 channel 只关闭一次，且不修改字段本身（避免与 pingLoop 竞争）。
 func (c *Conn) StopKeepAlive() {
-	c.mu.Lock()
-	stop := c.keepAliveStop
-	c.keepAliveStop = nil
-	c.mu.Unlock()
-	if stop != nil {
-		close(stop)
-	}
+	c.stopOnce.Do(func() {
+		c.mu.Lock()
+		stop := c.keepAliveStop
+		c.mu.Unlock()
+		if stop != nil {
+			close(stop)
+		}
+	})
 }
 
 // ReadJSON 从连接读取一条 JSON 消息并解码。

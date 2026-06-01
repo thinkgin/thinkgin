@@ -249,14 +249,22 @@ func TestKeepAlive_ServerSendsPing(t *testing.T) {
 }
 
 func TestStopKeepAlive_Idempotent(t *testing.T) {
-	c := &Conn{}
-	// 未启动时调用 StopKeepAlive 不应 panic。
-	c.StopKeepAlive()
+	// 未启动心跳时调用 StopKeepAlive 不应 panic。
+	c1 := &Conn{}
+	c1.StopKeepAlive()
 
-	// 启动后多次停止也应安全。
-	c.keepAliveStop = make(chan struct{})
-	c.StopKeepAlive()
-	c.StopKeepAlive()
+	// 已启动心跳的连接，多次停止也应安全且不重复 close。
+	c2 := &Conn{keepAliveStop: make(chan struct{})}
+	c2.StopKeepAlive()
+	c2.StopKeepAlive()
+
+	// 确认 channel 已被关闭。
+	select {
+	case <-c2.keepAliveStop:
+		// 已关闭，符合预期
+	default:
+		t.Error("StopKeepAlive 应已关闭 keepAliveStop channel")
+	}
 }
 
 func TestKeepAliveConfig_Normalized(t *testing.T) {
